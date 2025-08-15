@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>送信控え - 寄付管理システム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-4 max-w-md">
+        <!-- ヘッダー -->
+        <header class="text-center mb-4">
+            <h1 class="text-xl font-bold text-gray-800 mb-1">送信控え</h1>
+            <p id="formSubtitle" class="text-sm text-gray-600">〇〇大会振込報告フォーム</p>
+        </header>
+
+        <!-- 注意事項 -->
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-4">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="h-4 w-4 text-yellow-400 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-2">
+                    <p class="text-xs text-yellow-700">
+                        ⚠️この控えは 画面を閉じると再度表示することはできません
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- スクリーンショット促進 -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-center">
+            <p class="text-sm font-medium text-blue-800 mb-1">📱 この画面をスクリーンショットで保存してください</p>
+            <p class="text-xs text-blue-600">控えとして大切に保管してください</p>
+        </div>
+
+        <!-- 送信完了メッセージ -->
+        <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 text-center">
+            <div class="text-green-600 text-lg mb-1">✅</div>
+            <p class="text-sm font-medium text-green-800">奉加帳を正常に送信しました</p>
+            <p class="text-xs text-green-600">ありがとうございます</p>
+        </div>
+
+        <!-- 送信内容 -->
+        <div class="bg-white rounded-lg shadow-sm border p-4 mb-4">
+            <!-- 基本情報セクション -->
+            <div class="mb-4">
+                <h2 class="text-sm font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">基本情報</h2>
+                <div class="space-y-1 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">学年:</span>
+                        <span id="receipt-grade" class="font-medium">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">氏名:</span>
+                        <span id="receipt-name" class="font-medium">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">振込日:</span>
+                        <span id="receipt-transferDate" class="font-medium">-</span>
+                    </div>
+                    <div id="receipt-sibling-info" class="hidden">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">兄弟人数:</span>
+                            <span id="receipt-siblingCount" class="font-medium">-</span>
+                        </div>
+                        <div id="receipt-siblingNames" class="space-y-1">
+                            <!-- 兄弟の名前が動的に挿入される -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 振込金額セクション -->
+            <div class="mb-4">
+                <h2 class="text-sm font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">振込金額</h2>
+                <div class="space-y-1 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">振込金額:</span>
+                        <span id="receipt-transferAmount" class="font-medium">¥0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">直接振込金額:</span>
+                        <span id="receipt-directTransferAmount" class="font-medium">¥0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 内訳セクション -->
+            <div class="mb-4">
+                <h2 class="text-sm font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">内訳</h2>
+                <div class="space-y-1 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">寄付金:</span>
+                        <span id="receipt-donationAmount" class="font-medium">¥0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">負担金:</span>
+                        <span id="receipt-burdenAmount" class="font-medium">¥0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Tシャツ代:</span>
+                        <span id="receipt-tshirtAmount" class="font-medium">¥0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">激励会協力金:</span>
+                        <span id="receipt-encouragementAmount" class="font-medium">¥0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">その他の費用:</span>
+                        <span id="receipt-otherFee" class="font-medium">¥0</span>
+                    </div>
+                    <div class="flex justify-between pt-1 border-t border-gray-200">
+                        <span class="text-gray-800 font-medium">内訳合計:</span>
+                        <span id="receipt-breakdownTotal" class="font-bold text-green-600">¥0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 寄付者情報セクション -->
+            <div class="mb-4">
+                <h2 class="text-sm font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">寄付者情報</h2>
+                <div id="receipt-donors" class="space-y-2">
+                    <!-- 寄付者情報が動的に挿入される -->
+                </div>
+            </div>
+
+            <!-- 合計情報 -->
+            <div class="bg-gray-50 rounded p-3">
+                <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div>
+                        <p class="text-gray-600">寄付者数</p>
+                        <p id="receipt-totalDonors" class="font-bold text-blue-600">0</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-600">合計金額</p>
+                        <p id="receipt-totalAmount" class="font-bold text-green-600">¥0</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-600">返礼品数</p>
+                        <p id="receipt-totalGifts" class="font-bold text-purple-600">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 送信日時 -->
+        <div class="text-center text-xs text-gray-500 mb-4">
+            <p>送信日時: <span id="receipt-submissionDate">-</span></p>
+        </div>
+
+        <!-- ボタン -->
+        <div class="space-y-2">
+            <button onclick="window.location.href='page1.html'" 
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md text-sm font-medium transition-colors">
+                🔄 新しく入力する
+            </button>
+            <button onclick="window.close()" 
+                    class="w-full bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-md text-sm font-medium transition-colors">
+                ✖️ 閉じる
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/sheets.js"></script>
+    <script src="js/receipt.js"></script>
+</body>
+</html>

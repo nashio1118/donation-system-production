@@ -1,0 +1,33 @@
+{
+  "sheets": {
+    "configSheetId": "",
+    "configSheetName": "管理用スプレッドシート",
+    "autoLoadConfig": true,
+    "cacheTimeout": 300000
+  },
+  "giftRules": {
+    "defaultRules": {
+      "towel": { "minAmount": 10000, "name": "タオル", "category": "premium" },
+      "sweets": { "minAmount": 5000, "name": "お菓子", "category": "standard" },
+      "keychain": { "minAmount": 5000, "name": "キーホルダー", "category": "standard" },
+      "clearfile": { "minAmount": 0, "name": "クリアファイル", "category": "basic" },
+      "clearfile_25": { "minAmount": 5000, "name": "クリアファイル25枚(団体様)", "category": "group" },
+      "clearfile_50": { "minAmount": 10000, "name": "クリアファイル50枚(団体様)", "category": "group" }
+    }
+  },
+  "amountOptions": {
+    "defaultOptions": {
+      "amount_10000": { "amount": 10000, "displayName": "¥10,000" },
+      "amount_5000": { "amount": 5000, "displayName": "¥5,000" },
+      "amount_other": { "amount": 0, "displayName": "その他" }
+    }
+  },
+  "categories": {
+    "defaultCategories": {
+      "premium": { "name": "プレミアム", "description": "高額寄付者向け" },
+      "standard": { "name": "スタンダード", "description": "標準的な返礼品" },
+      "basic": { "name": "ベーシック", "description": "基本返礼品" },
+      "group": { "name": "団体様", "description": "団体向け返礼品" }
+    }
+  }
+} 

@@ -1,0 +1,216 @@
+/* カスタムスタイル */
+
+/* フォーム要素のフォーカス効果 */
+.form-input:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 寄付者行のホバー効果 */
+.donor-row:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+/* 削除ボタンのホバー効果 */
+.remove-donor-btn:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease-in-out;
+}
+
+/* 送信ボタンのローディング状態 */
+.submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* 金額入力フィールドの特別なスタイル */
+.donor-amount {
+    font-weight: 600;
+    color: #059669;
+}
+
+.donor-amount:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+}
+
+/* 返礼品選択の特別なスタイル */
+.donor-gift {
+    font-weight: 500;
+}
+
+.donor-gift option {
+    padding: 8px;
+}
+
+/* 合計表示エリアの特別なスタイル */
+#totalAmount {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* レスポンシブデザインの調整 */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .donor-row {
+        padding: 1rem;
+    }
+    
+    .grid {
+        grid-template-columns: 1fr;
+    }
+    
+    /* モバイルでのボタンサイズ調整 */
+    .bg-blue-500, .bg-green-500 {
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* アニメーション効果 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.donor-row {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* バリデーションエラーのスタイル */
+.input-error {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.error-message {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* 成功メッセージのスタイル */
+.success-message {
+    color: #059669;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* ローディングスピナーのカスタマイズ */
+.loading-spinner {
+    border: 3px solid #f3f4f6;
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 金額表示の特別なフォーマット */
+.amount-display {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+}
+
+/* 返礼品アイコンのスタイル */
+.gift-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+/* 必須フィールドのインジケーター */
+.required-field::after {
+    content: " *";
+    color: #ef4444;
+    font-weight: bold;
+}
+
+/* フォームセクションの区切り線 */
+.form-section {
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* カスタムスクロールバー */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* 印刷用スタイル */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        background: white !important;
+    }
+    
+    .container {
+        max-width: none !important;
+        padding: 0 !important;
+    }
+}
+
+/* アクセシビリティの改善 */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ダークモード対応（将来の拡張用） */
+@media (prefers-color-scheme: dark) {
+    /* ダークモードのスタイルは必要に応じて追加 */
+}
+
+/* フォーカス表示の改善（アクセシビリティ） */
+*:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* タッチデバイス用の調整 */
+@media (hover: none) and (pointer: coarse) {
+    .donor-row:hover {
+        box-shadow: none;
+    }
+    
+    .remove-donor-btn:hover {
+        transform: none;
+    }
+} 

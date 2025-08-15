@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寄付管理システム - デモ版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .demo-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .demo-banner h2 {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .demo-banner p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        .feature-highlight {
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0.5rem;
+        }
+        .feature-highlight h3 {
+            color: #1e40af;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .feature-highlight p {
+            color: #374151;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- デモバナー -->
+    <div class="demo-banner">
+        <h2>🎯 寄付管理システム デモ版</h2>
+        <p>実際の操作性をお試しください。スマホでもご確認いただけます。</p>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- 機能説明 -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 text-center">Webシステム版の特徴</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <div class="feature-highlight">
+                    <h3>📱 スマホ最適化</h3>
+                    <p>スマートフォンでも使いやすいレスポンシブデザイン。タッチ操作に最適化されています。</p>
+                </div>
+                <div class="feature-highlight">
+                    <h3>⚡ リアルタイム計算</h3>
+                    <p>入力と同時に合計金額が自動計算されます。金額の照合も自動で行われます。</p>
+                </div>
+                <div class="feature-highlight">
+                    <h3>🎁 返礼品自動提案</h3>
+                    <p>金額に応じて適切な返礼品が自動で提案されます。</p>
+                </div>
+                <div class="feature-highlight">
+                    <h3>👥 複数人まとめて入力</h3>
+                    <p>複数の寄付者情報を一度に入力できます。追加も簡単です。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ナビゲーション -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">デモページ</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="page1.html?demo=1" class="block p-4 border-2 border-blue-500 rounded-lg text-center hover:bg-blue-50 transition-colors">
+                    <h3 class="font-semibold text-blue-600 mb-2">📋 1ページ目：基本情報入力</h3>
+                    <p class="text-sm text-gray-600">学年、名前、振込金額などの基本情報を入力します</p>
+                </a>
+                <a href="page2.html?demo=1" class="block p-4 border-2 border-green-500 rounded-lg text-center hover:bg-green-50 transition-colors">
+                    <h3 class="font-semibold text-green-600 mb-2">👥 2ページ目：寄付者情報入力</h3>
+                    <p class="text-sm text-gray-600">複数人分の寄付者情報をまとめて入力します</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- Googleフォームとの比較 -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Googleフォームとの比較</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="text-left py-2">機能</th>
+                            <th class="text-center py-2">Googleフォーム</th>
+                            <th class="text-center py-2">Webシステム</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b">
+                            <td class="py-2">複数人入力</td>
+                            <td class="text-center text-red-600">❌ 1人ずつ</td>
+                            <td class="text-center text-green-600">✅ まとめて入力</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-2">リアルタイム計算</td>
+                            <td class="text-center text-red-600">❌ 送信後確認</td>
+                            <td class="text-center text-green-600">✅ 入力と同時</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-2">金額照合</td>
+                            <td class="text-center text-red-600">❌ 手動確認</td>
+                            <td class="text-center text-green-600">✅ 自動照合</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-2">返礼品提案</td>
+                            <td class="text-center text-red-600">❌ 手動選択</td>
+                            <td class="text-center text-green-600">✅ 自動提案</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-2">スマホ対応</td>
+                            <td class="text-center text-yellow-600">⚠️ 基本対応</td>
+                            <td class="text-center text-green-600">✅ 最適化済み</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 運用効率の比較 -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">運用効率の比較</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-semibold text-gray-700 mb-3">Googleフォーム版</h3>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li>• 1人ずつ入力・送信</li>
+                        <li>• 手動で金額照合</li>
+                        <li>• 手動で返礼品選択</li>
+                        <li>• 手動で集計作業</li>
+                        <li>• 人的ミスが発生しやすい</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-700 mb-3">Webシステム版</h3>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li>• 複数人まとめて入力</li>
+                        <li>• 自動で金額照合</li>
+                        <li>• 自動で返礼品提案</li>
+                        <li>• リアルタイム集計</li>
+                        <li>• 自動チェックでミス防止</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 時間短縮効果 -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">時間短縮効果（5人分の入力例）</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-center p-4 bg-blue-50 rounded-lg">
+                    <div class="text-2xl font-bold text-blue-600">50%</div>
+                    <div class="text-sm text-gray-600">入力時間短縮</div>
+                    <div class="text-xs text-gray-500">30分 → 15分</div>
+                </div>
+                <div class="text-center p-4 bg-green-50 rounded-lg">
+                    <div class="text-2xl font-bold text-green-600">90%</div>
+                    <div class="text-sm text-gray-600">照合作業短縮</div>
+                    <div class="text-xs text-gray-500">10分 → 1分</div>
+                </div>
+                <div class="text-center p-4 bg-purple-50 rounded-lg">
+                    <div class="text-2xl font-bold text-purple-600">95%</div>
+                    <div class="text-sm text-gray-600">ミス削減</div>
+                    <div class="text-xs text-gray-500">自動チェック機能</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- お試しボタン -->
+        <div class="text-center">
+            <a href="page1.html" class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-lg font-medium transition-colors">
+                🚀 実際に操作してみる
+            </a>
+            <p class="text-sm text-gray-600 mt-2">スマホでもご確認いただけます</p>
+        </div>
+    </div>
+
+    <script>
+        // デモ用の設定
+        console.log('デモ版です。実際のデータ送信は行われません。');
+    </script>
+</body>
+</html> 
