@@ -36,6 +36,89 @@ class DemoManager {
                 this.ensureBurdenFeeSet();
             }
         }
+        
+        // 2ページ目のデモ版初期化
+        if (window.location.pathname.includes('page2.html')) {
+            this.initializePage2Demo();
+        }
+    }
+    
+    // 2ページ目のデモ版初期化
+    initializePage2Demo() {
+        console.log('デモ版：2ページ目初期化開始');
+        
+        // 基本情報の表示
+        this.loadBasicInfo();
+        
+        // 初期の寄付者行を追加
+        setTimeout(() => {
+            this.addInitialDonors();
+        }, 100);
+        
+        // 寄付者追加ボタンの設定
+        const addDonorBtn = document.getElementById('addDonorBtn');
+        if (addDonorBtn) {
+            addDonorBtn.addEventListener('click', () => {
+                if (window.demoFormManager) {
+                    window.demoFormManager.addDonorRow();
+                }
+            });
+        }
+    }
+    
+    // 基本情報を読み込み
+    loadBasicInfo() {
+        try {
+            const basicInfo = localStorage.getItem('basicInfo');
+            if (basicInfo) {
+                this.basicInfo = JSON.parse(basicInfo);
+                this.displayBasicInfo();
+            }
+        } catch (error) {
+            console.error('基本情報読み込みエラー:', error);
+        }
+    }
+    
+    // 基本情報を表示
+    displayBasicInfo() {
+        if (!this.basicInfo) return;
+        
+        // ヘッダーに基本情報を追加
+        const header = document.querySelector('header');
+        if (header) {
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'mt-4 p-4 bg-blue-50 rounded-lg';
+            infoDiv.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div><strong>名前:</strong> ${this.basicInfo.basicInfo.name}</div>
+                    <div><strong>学年:</strong> ${this.basicInfo.basicInfo.grade}</div>
+                    <div><strong>振込日:</strong> ${this.basicInfo.basicInfo.transferDate}</div>
+                </div>
+                <div class="mt-2 p-2 bg-white rounded border">
+                    <strong>1ページ目の寄付金:</strong> ¥${this.basicInfo.breakdownDetails.donationAmount.toLocaleString()}
+                </div>
+            `;
+            header.appendChild(infoDiv);
+        }
+    }
+    
+    // 初期の寄付者行を追加
+    addInitialDonors() {
+        const donorsContainer = document.getElementById('donorsContainer');
+        if (!donorsContainer) {
+            console.error('donorsContainerが見つかりません');
+            return;
+        }
+        
+        // 既存の寄付者行をクリア
+        donorsContainer.innerHTML = '';
+        
+        // 5行の初期寄付者行を追加
+        for (let i = 1; i <= 5; i++) {
+            if (window.demoFormManager) {
+                window.demoFormManager.addDonorRow();
+            }
+        }
     }
 
     // デモ用の機能設定
@@ -423,6 +506,8 @@ class DemoFormManager {
         
         // 計算を更新
         this.updateCalculations();
+        
+        console.log('デモ版：寄付者行を追加しました（' + donorCount + '行目）');
     }
 
     // 寄付者行の作成
@@ -525,6 +610,7 @@ class DemoFormManager {
 // デモ用の初期化（スクリプトがDOMContentLoaded後に読み込まれても必ず実行）
 (function initDemoScripts() {
     const init = () => {
+        console.log('デモ版初期化開始');
         window.demoManager = new DemoManager();
         window.demoFormManager = new DemoFormManager();
 
@@ -548,6 +634,8 @@ class DemoFormManager {
                 } catch (_) {}
             }, 800);
         }
+        
+        console.log('デモ版初期化完了');
     };
 
     if (document.readyState === 'loading') {
