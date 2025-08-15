@@ -589,15 +589,26 @@ class DemoFormManager {
 
     // 返礼品変更時の処理
     handleGiftChange(giftSelect, sheetsContainer, sheetsSelect) {
-        if (giftSelect.value === 'clearfile') {
+        const selectedGift = giftSelect.value;
+        
+        // クリアファイルが選択された場合（値は返礼品IDを使用）
+        if (selectedGift === 'clearfile') {
             sheetsContainer.classList.remove('hidden');
+            
+            // 枚数オプションを更新
+            sheetsSelect.innerHTML = '<option value="">枚数を選択</option>';
+            for (let i = 1; i <= 50; i++) {
+                sheetsSelect.innerHTML += `<option value="${i}">${i}枚</option>`;
+            }
         } else {
             sheetsContainer.classList.add('hidden');
+            sheetsSelect.value = '';
         }
     }
 
     // クリアファイル枚数オプションを生成
     generateClearfileOptions(select) {
+        select.innerHTML = '<option value="">枚数を選択</option>';
         for (let i = 1; i <= 50; i++) {
             const option = document.createElement('option');
             option.value = i;
