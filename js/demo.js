@@ -119,6 +119,33 @@ class DemoManager {
                 window.demoFormManager.addDonorRow();
             }
         }
+        
+        // 初期化完了後に返礼品オプションを設定
+        setTimeout(() => {
+            this.initializeGiftOptions();
+        }, 100);
+    }
+    
+    // 返礼品オプションを初期化
+    initializeGiftOptions() {
+        const giftSelects = document.querySelectorAll('.donor-gift');
+        giftSelects.forEach(select => {
+            // デフォルトの返礼品オプションを設定
+            select.innerHTML = '<option value="">返礼品なし</option>';
+            
+            // DemoCalculatorの返礼品ルールからオプションを生成
+            if (window.demoFormManager && window.demoFormManager.calculator) {
+                const giftRules = window.demoFormManager.calculator.giftRules;
+                Object.entries(giftRules).forEach(([key, rule]) => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = `${rule.name}（¥${rule.minAmount.toLocaleString()}以上）`;
+                    select.appendChild(option);
+                });
+            }
+        });
+        
+        console.log('デモ版：返礼品オプションを初期化しました');
     }
 
     // デモ用の機能設定
@@ -480,11 +507,7 @@ class DemoFormManager {
     // 返礼品オプションの更新
     updateGiftOptions(select, suggestions) {
         // 既存のオプションをクリア（最初の「返礼品なし」は保持）
-        const noGiftOption = select.querySelector('option[value=""]');
-        select.innerHTML = '';
-        if (noGiftOption) {
-            select.appendChild(noGiftOption);
-        }
+        select.innerHTML = '<option value="">返礼品なし</option>';
 
         // 新しい返礼品オプションを追加
         suggestions.forEach(suggestion => {
@@ -493,6 +516,8 @@ class DemoFormManager {
             option.textContent = `${suggestion.name}（¥${suggestion.minAmount.toLocaleString()}以上）`;
             select.appendChild(option);
         });
+        
+        console.log('デモ版：返礼品オプションを更新しました', suggestions);
     }
 
     // 寄付者行の追加
@@ -504,10 +529,33 @@ class DemoFormManager {
         const newRow = this.createDonorRow(donorCount);
         container.appendChild(newRow);
         
+        // 新しく追加された行の返礼品オプションを設定
+        const giftSelect = newRow.querySelector('.donor-gift');
+        if (giftSelect) {
+            this.initializeSingleGiftSelect(giftSelect);
+        }
+        
         // 計算を更新
         this.updateCalculations();
         
         console.log('デモ版：寄付者行を追加しました（' + donorCount + '行目）');
+    }
+    
+    // 単一の返礼品セレクトボックスを初期化
+    initializeSingleGiftSelect(giftSelect) {
+        // デフォルトの返礼品オプションを設定
+        giftSelect.innerHTML = '<option value="">返礼品なし</option>';
+        
+        // DemoCalculatorの返礼品ルールからオプションを生成
+        if (this.calculator) {
+            const giftRules = this.calculator.giftRules;
+            Object.entries(giftRules).forEach(([key, rule]) => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = `${rule.name}（¥${rule.minAmount.toLocaleString()}以上）`;
+                giftSelect.appendChild(option);
+            });
+        }
     }
 
     // 寄付者行の作成
