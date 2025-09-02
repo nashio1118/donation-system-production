@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>奉加帳提出報告フォーム</title>
+    <title>寄付者管理システム - 基本情報入力</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -11,8 +11,16 @@
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <!-- ヘッダー -->
         <header class="text-center mb-8">
-            <h1 id="formTitle" class="text-3xl font-bold text-gray-800 mb-2">奉加帳提出報告フォーム</h1>
-            <p id="formSubtitle" class="text-gray-600">〇〇大会振込報告フォーム</p>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">基本情報入力</h1>
+            <p id="formSubtitle" class="text-gray-600">寄付者管理システム</p>
+            
+            <!-- 設定読み込み中のローディング表示 -->
+            <div id="settings-loading" class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div class="flex items-center justify-center space-x-2">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                    <span class="text-sm text-blue-700">設定を読み込み中...</span>
+                </div>
+            </div>
         </header>
 
         <!-- フォーム -->
@@ -61,16 +69,11 @@
                         
                         <!-- 兄弟の名前入力欄 -->
                         <div id="siblingNamesContainer" class="hidden mt-4">
-                            <h3 class="text-lg font-medium text-gray-700 mb-3">兄弟の名前</h3>
+                            <h3 class="text-lg font-medium text-gray-700 mb-3">兄弟の情報</h3>
                             <div id="siblingNamesFields" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <!-- 兄弟の名前入力フィールドが動的に追加される -->
+                                <!-- 兄弟の情報入力フィールドが動的に追加される -->
                             </div>
                         </div>
-                    </div>
-                    <div>
-                        <label for="transferDate" class="block text-sm font-medium text-gray-700 mb-1">振込日 *</label>
-                        <input type="date" id="transferDate" name="transferDate" required
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
             </div>
@@ -78,18 +81,19 @@
             <!-- 振込金額セクション -->
             <div class="mb-8">
                 <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">振込金額</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-4">
                     <div>
-                        <label for="transferAmount" class="block text-sm font-medium text-gray-700 mb-1">振込金額（直接振込を除く） *</label>
-                        <input type="number" id="transferAmount" name="transferAmount" min="0" step="100" required
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                               placeholder="0">
+                        <label for="transferDate" class="block text-sm font-medium text-gray-700 mb-1">振込日 *</label>
+                        <input type="date" id="transferDate" name="transferDate" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
-                    <div>
-                        <label for="directTransferAmount" class="block text-sm font-medium text-gray-700 mb-1">直接振込金額</label>
-                        <input type="number" id="directTransferAmount" name="directTransferAmount" min="0" step="100"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                               placeholder="0">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="transferAmount" class="block text-sm font-medium text-gray-700 mb-1">振込金額（直接振込を除く） *</label>
+                            <input type="number" id="transferAmount" name="transferAmount" min="0" step="100" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="0">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -99,7 +103,7 @@
                 <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">振込金額の内訳</h2>
                 <div class="space-y-4">
                     <div>
-                        <label for="donationAmount" class="block text-sm font-medium text-gray-700 mb-1">寄付金 *</label>
+                        <label for="donationAmount" class="block text-sm font-medium text-gray-700 mb-1">寄付金（直接振込を除く） *</label>
                         <input type="number" id="donationAmount" name="donationAmount" min="0" step="100" required
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                placeholder="0">
@@ -135,6 +139,19 @@
                 </div>
             </div>
 
+            <!-- 寄付金の直接振込金額セクション -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">寄付金の直接振込金額※寄付者から直接振り込まれる合計金額</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="directTransferAmount" class="block text-sm font-medium text-gray-700 mb-1">直接振込金額</label>
+                        <input type="number" id="directTransferAmount" name="directTransferAmount" min="0" step="100"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="0">
+                    </div>
+                </div>
+            </div>
+
             <!-- 合計確認セクション -->
             <div class="bg-gray-50 rounded-lg p-4 mb-6">
                 <div class="text-center">
@@ -143,11 +160,14 @@
                 </div>
             </div>
 
+            <!-- 警告表示エリア -->
+            <div id="transfer-warning" class="hidden mb-6"></div>
+
             <!-- 送信ボタン -->
             <div class="text-center">
                 <button type="submit" 
                         class="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-md text-lg font-medium transition-colors">
-                    次へ進む（奉加帳入力）
+                    次へ進む（寄付者情報入力）
                 </button>
             </div>
         </form>
@@ -164,80 +184,5 @@
     <!-- JavaScript -->
     <script src="js/sheets.js"></script>
     <script src="js/page1.js"></script>
-    <script>
-        // デモ版判定とデモ用スクリプトの読み込み
-        const urlParams = new URLSearchParams(window.location.search);
-        console.log('URLパラメータ:', window.location.search);
-        console.log('demo パラメータ:', urlParams.get('demo'));
-        
-        if (urlParams.get('demo') === '1') {
-            console.log('デモ版として動作します');
-            
-            // デモ版用の負担金初期化を直接実行
-            function initializeDemoBurdenFee() {
-                console.log('デモ版：直接負担金初期化を実行');
-                
-                const burdenFeeDisplay = document.getElementById('burdenFeeDisplay');
-                const burdenFeeInput = document.getElementById('burdenFeeAmount');
-                const totalBreakdown = document.getElementById('totalBreakdown');
-                
-                console.log('要素チェック:', {
-                    burdenFeeDisplay: !!burdenFeeDisplay,
-                    burdenFeeInput: !!burdenFeeInput,
-                    totalBreakdown: !!totalBreakdown
-                });
-                
-                if (burdenFeeDisplay) {
-                    burdenFeeDisplay.textContent = '¥40,000';
-                    console.log('負担金表示を更新:', burdenFeeDisplay.textContent);
-                }
-                
-                if (burdenFeeInput) {
-                    burdenFeeInput.value = 40000;
-                    console.log('負担金隠しフィールドを更新:', burdenFeeInput.value);
-                }
-                
-                // 内訳合計も更新
-                if (totalBreakdown) {
-                    const donationAmount = parseInt(document.getElementById('donationAmount')?.value) || 0;
-                    const burdenFeeAmount = 40000;
-                    const tshirtAmount = parseInt(document.getElementById('tshirtAmount')?.value) || 0;
-                    const otherFee = parseInt(document.getElementById('otherFee')?.value) || 0;
-                    const hasEncouragementFee = document.querySelector('input[name="hasEncouragementFee"]')?.checked || false;
-                    
-                    const encouragementAmount = hasEncouragementFee ? 1000 : 0;
-                    const total = donationAmount + burdenFeeAmount + tshirtAmount + encouragementAmount + otherFee;
-                    
-                    totalBreakdown.textContent = `¥${total.toLocaleString()}`;
-                    console.log('内訳合計を更新:', totalBreakdown.textContent);
-                }
-            }
-            
-            // 複数のタイミングで実行
-            setTimeout(initializeDemoBurdenFee, 100);
-            setTimeout(initializeDemoBurdenFee, 300);
-            setTimeout(initializeDemoBurdenFee, 500);
-            
-            // DOMContentLoadedでも実行
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initializeDemoBurdenFee);
-            } else {
-                initializeDemoBurdenFee();
-            }
-            
-            // デモ用スクリプトを動的に読み込み（追加機能のため）
-            const script = document.createElement('script');
-            script.src = 'js/demo.js';
-            script.onload = function() {
-                console.log('demo.js が正常に読み込まれました');
-            };
-            script.onerror = function() {
-                console.error('demo.js の読み込みに失敗しました');
-            };
-            document.head.appendChild(script);
-        } else {
-            console.log('通常版として動作します');
-        }
-    </script>
 </body>
 </html> 

@@ -39,28 +39,13 @@ class GoogleSheetsManager {
                     return stored;
                 }
             } catch (_) {}
-            return 'https://script.google.com/macros/s/AKfycbww215RU1fmTXow-k6vCdv1cMo4cNf_0aBVjKwjIddxN1CpVE-Jx6DYC-h8p8mAG9XN4Q/exec'; // 新しいGAS URLをここに設定してください
+            return 'https://script.google.com/macros/s/AKfycbxYr7_58ZSgWUZGLdc71pKKWbeeXcsDWZgTQXwXnNsPIOi1-WwPjpOCkNpKGQ6yVq21xw/exec'; // 新しいGAS URLをここに設定してください
         };
         this.scriptUrl = __resolveScriptUrl();
-        // デモモード判定（URLの ?demo=1 または sessionStorage のフラグ）
-        this.isDemo = this.isDemoMode();
         this.loadSettings();
     }
 
-    // デモモードかどうかを判定
-    isDemoMode() {
-        try {
-            const params = new URLSearchParams(window.location.search || '');
-            const urlFlag = params.get('demo') === '1';
-            if (urlFlag) {
-                try { sessionStorage.setItem('isDemo', '1'); } catch (_) {}
-            }
-            const sessionFlag = (() => { try { return sessionStorage.getItem('isDemo') === '1'; } catch (_) { return false; } })();
-            return urlFlag || sessionFlag;
-        } catch (_) {
-            return false;
-        }
-    }
+
 
     // ローカルキャッシュから読み込み（存在すれば即時反映）
     loadSettingsFromCache() {
@@ -88,12 +73,6 @@ class GoogleSheetsManager {
     // 設定を読み込み（SWR: 即時キャッシュ→裏で最新取得）
     async loadSettings() {
         try {
-            // デモモードではGASからの取得を行わず、内蔵デフォルト設定のみを使用
-            if (this.isDemo) {
-                console.log('デモモードのため、設定読み込みをスキップしてデフォルト設定を適用します');
-                this.loadDefaultSettings();
-                return;
-            }
             // URLが設定されていない場合はデフォルト設定を使用
             if (!this.scriptUrl || this.scriptUrl === '') {
                 console.warn('Google Apps ScriptのURLが設定されていません。デフォルト設定を使用します。');
@@ -121,10 +100,12 @@ class GoogleSheetsManager {
                     };
                     this.settings = latest;
                     this.saveSettingsToCache(latest);
+                    console.log('返礼品設定を読み込みました:', this.settings.giftRules);
                     try { this.updateFormSettings(); } catch (_) {}
                 } else if (result && result.settings) {
                     this.settings = result.settings;
                     this.saveSettingsToCache(this.settings);
+                    console.log('返礼品設定を読み込みました:', this.settings.giftRules);
                     try { this.updateFormSettings(); } catch (_) {}
                 } else {
                     throw new Error(result && result.error ? result.error : '設定の読み込みに失敗しました');
@@ -156,7 +137,7 @@ class GoogleSheetsManager {
                 sweets_large: { minAmount: 10000, name: 'お菓子大', description: '高級お菓子セット' },
                 keychain: { minAmount: 5000, name: 'キーホルダー', description: 'オリジナルキーホルダー' },
                 sweets_small: { minAmount: 5000, name: 'お菓子小', description: 'お菓子セット' },
-                clearfile: { minAmount: 1000, name: 'クリアファイル', description: 'オリジナルクリアファイル' }
+                clearfile: { minAmount: 1000, name: '③ クリアファイル', description: 'オリジナルクリアファイル' }
             },
             amountOptions: {
                 amount_10000: { amount: 10000, displayName: '¥10,000' },
@@ -247,8 +228,8 @@ class GoogleSheetsManager {
             generateGiftOptions: (_amount) => {
                 let options = '<option value="">返礼品なし</option>';
                 Object.entries(this.settings.giftRules).forEach(([id, rule]) => {
-                    // 値はIDではなく「返礼品名」を使用
-                    options += `<option value="${rule.name}">${rule.name}</option>`;
+                    // 値はID、表示は名前（IDで統一）
+                    options += `<option value="${id}">${rule.name}</option>`;
                 });
                 return options;
             },
@@ -270,14 +251,7 @@ class GoogleSheetsManager {
             console.log('this.scriptUrl型:', typeof this.scriptUrl);
             console.log('this.scriptUrl長さ:', this.scriptUrl ? this.scriptUrl.length : 'null/undefined');
             
-            // デモモード判定（URL または sessionStorage または事前判定）
-            const params = new URLSearchParams(window.location.search || '');
-            const isDemoMode = this.isDemo || params.get('demo') === '1' || (function(){ try { return sessionStorage.getItem('isDemo') === '1'; } catch(_) { return false; } })();
-            if (isDemoMode) {
-                console.log('デモモードのため実送信をスキップします');
-                await new Promise(resolve => setTimeout(resolve, 500));
-                return { success: true, message: 'デモモード: 送信をスキップしました。' };
-            }
+
 
             // URLが設定されていない場合はエラーを返す
             if (!this.scriptUrl || this.scriptUrl === '') {
@@ -337,14 +311,7 @@ class GoogleSheetsManager {
     // フォーム設定を取得（SWR: 即返し→裏で最新）
     async getFormSettings() {
         try {
-            // デモモードではフォーム設定もローカルデフォルトを返す
-            if (this.isDemo) {
-                console.log('デモモードのため、フォーム設定はデフォルトを返します');
-                return {
-                    formTitle: '奉加帳提出報告フォーム',
-                    formSubtitle: '〇〇大会振込報告フォーム'
-                };
-            }
+
             // URLが設定されていない場合はデフォルト設定を返す
             if (!this.scriptUrl || this.scriptUrl === '') {
                 console.warn('Google Apps ScriptのURLが設定されていません。デフォルト設定を使用します。');

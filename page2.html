@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>奉加帳</title>
+    <title>寄付者管理システム - 寄付者情報入力</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -11,16 +11,24 @@
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <!-- ヘッダー -->
         <header class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">奉加帳</h1>
-            <p id="formSubtitle" class="text-gray-600">〇〇大会振込報告フォーム</p>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">寄付者情報入力</h1>
+            <p id="formSubtitle" class="text-gray-600">寄付者管理システム</p>
+            
+            <!-- 設定読み込み中のローディング表示 -->
+            <div id="settings-loading" class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div class="flex items-center justify-center space-x-2">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                    <span class="text-sm text-blue-700">設定を読み込み中...</span>
+                </div>
+            </div>
         </header>
 
         <!-- フォーム -->
         <form id="donationForm" class="bg-white rounded-lg shadow-lg p-6">
-            <!-- 奉加帳セクション -->
+                            <!-- 寄付者情報セクション -->
             <div class="mb-8">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-gray-800 border-b pb-2">奉加帳</h2>
+                    <h2 class="text-xl font-semibold text-gray-800 border-b pb-2">寄付者情報</h2>
                 </div>
                 
                 <div id="donorsContainer">
@@ -54,13 +62,16 @@
                 </div>
             </div>
 
+            <!-- 警告表示エリア -->
+            <div id="amount-warning" class="hidden mb-6"></div>
+
             <!-- ボタン -->
             <div class="text-center space-y-3">
                 <!-- 1ページ目に戻るボタン -->
                 <div>
                     <button type="button" id="backToPage1Btn"
                             class="bg-gray-400 hover:bg-gray-500 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors">
-                        ← 1ページ目に戻る
+                        ← 基本情報に戻る
                     </button>
                 </div>
                 
@@ -68,7 +79,7 @@
                 <div>
                     <button type="submit" 
                             class="bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-md text-lg font-medium transition-colors">
-                        奉加帳を送信
+                        寄付者情報を送信
                     </button>
                 </div>
             </div>
@@ -85,7 +96,7 @@
                     </div>
 
                     <!-- 送信内容 -->
-                    <div class="bg-gray-50 rounded-lg p-3 mb-4 max-h-96 overflow-y-auto">
+                    <div class="max-h-96 overflow-y-auto p-4">
                         <!-- 基本情報セクション -->
                         <div class="mb-3">
                             <h3 class="text-sm font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">基本情報</h3>
@@ -97,10 +108,6 @@
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">氏名:</span>
                                     <span id="confirm-name" class="font-medium">-</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">振込日:</span>
-                                    <span id="confirm-transferDate" class="font-medium">-</span>
                                 </div>
                                 <div id="confirm-sibling-info" class="hidden">
                                     <div class="flex justify-between">
@@ -119,22 +126,22 @@
                             <h3 class="text-sm font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">振込金額</h3>
                             <div class="space-y-1 text-xs">
                                 <div class="flex justify-between">
-                                    <span class="text-gray-600">振込金額:</span>
-                                    <span id="confirm-transferAmount" class="font-medium">¥0</span>
+                                    <span class="text-gray-600">振込日:</span>
+                                    <span id="confirm-transferDate" class="font-medium">-</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-gray-600">直接振込金額:</span>
-                                    <span id="confirm-directTransferAmount" class="font-medium">¥0</span>
+                                    <span class="text-gray-600">振込金額（直接振込を除く）:</span>
+                                    <span id="confirm-transferAmount" class="font-medium">¥0</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- 内訳セクション -->
+                        <!-- 振込金額の内訳セクション -->
                         <div class="mb-3">
-                            <h3 class="text-sm font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">内訳</h3>
+                            <h3 class="text-sm font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">振込金額の内訳</h3>
                             <div class="space-y-1 text-xs">
                                 <div class="flex justify-between">
-                                    <span class="text-gray-600">寄付金:</span>
+                                    <span class="text-gray-600">寄付金（直接振込を除く）:</span>
                                     <span id="confirm-donationAmount" class="font-medium">¥0</span>
                                 </div>
                                 <div class="flex justify-between">
@@ -160,6 +167,17 @@
                             </div>
                         </div>
 
+                        <!-- 寄付金の直接振込金額セクション -->
+                        <div class="mb-3">
+                            <h3 class="text-sm font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">寄付金の直接振込金額※寄付者から直接振り込まれる合計金額</h3>
+                            <div class="space-y-1 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">直接振込金額:</span>
+                                    <span id="confirm-directTransferAmount" class="font-medium">¥0</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- 寄付者情報セクション -->
                         <div class="mb-3">
                             <h3 class="text-sm font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">寄付者情報</h3>
@@ -170,7 +188,7 @@
 
                         <!-- 合計情報 -->
                         <div class="bg-white rounded p-2">
-                            <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                            <div class="grid grid-cols-3 gap-2 text-center text-xs mb-3">
                                 <div>
                                     <p class="text-gray-600">寄付者数</p>
                                     <p id="confirm-totalDonors" class="font-bold text-blue-600">0</p>
@@ -182,6 +200,20 @@
                                 <div>
                                     <p class="text-gray-600">返礼品数</p>
                                     <p id="confirm-totalGifts" class="font-bold text-purple-600">0</p>
+                                </div>
+                            </div>
+                            
+                            <!-- 1ページ目との照合情報 -->
+                            <div class="border-t border-gray-200 pt-2">
+                                <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                                    <div>
+                                        <p class="text-gray-600">1ページ目寄付金合計</p>
+                                        <p id="confirm-page1Total" class="font-bold text-orange-600">¥0</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-600">照合結果</p>
+                                        <p id="confirm-matchResult" class="font-bold">-</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

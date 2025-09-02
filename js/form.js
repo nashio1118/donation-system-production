@@ -10,24 +10,19 @@ class DonationForm {
         this.confirmCancelBtn = document.getElementById('confirmCancelBtn');
         this.confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
         this.basicInfo = null;
-        // デモフラグを維持（page1のdemo=1から遷移時にURLから消えてもデモ扱いを続行）
-        this.ensureDemoFlag();
         
         this.initializeEventListeners();
         this.loadBasicInfo();
         this.loadPage2Data(); // 2ページ目のデータを復元
-        this.addInitialDonors(); // デフォルトで5名追加（復元データがない場合のみ）
-        this.loadFormSettings(); // フォーム設定を読み込み
+        
+        // 設定を読み込み（返礼品・金額オプション含む）
+        this.loadFormSettings();
+        
+        // 初期寄付者を追加
+        this.addInitialDonors();
     }
 
-    ensureDemoFlag() {
-        try {
-            const params = new URLSearchParams(window.location.search || '');
-            if (params.get('demo') === '1') {
-                sessionStorage.setItem('isDemo', '1');
-            }
-        } catch (e) {}
-    }
+
 
     initializeEventListeners() {
         this.addDonorBtn.addEventListener('click', () => this.addDonorRow());
@@ -60,6 +55,11 @@ class DonationForm {
     displayBasicInfo() {
         if (!this.basicInfo) return;
 
+        // 1ページ目の寄付金合計を計算（数値として確実に変換）
+        const page1Donation = parseInt(this.basicInfo.breakdownDetails.donationAmount) || 0;
+        const page1DirectTransfer = parseInt(this.basicInfo.breakdownDetails.directTransferAmount) || 0;
+        const page1TotalDonation = page1Donation + page1DirectTransfer;
+
         // ヘッダーに基本情報を追加
         const header = document.querySelector('header');
         const infoDiv = document.createElement('div');
@@ -71,7 +71,10 @@ class DonationForm {
                 <div><strong>振込日:</strong> ${this.basicInfo.basicInfo.transferDate}</div>
             </div>
             <div class="mt-2 p-2 bg-white rounded border">
-                <strong>1ページ目の寄付金:</strong> ¥${this.basicInfo.breakdownDetails.donationAmount.toLocaleString()}
+                <strong>1ページ目の寄付金合計:</strong> ¥${page1TotalDonation.toLocaleString()}
+            </div>
+            <div class="mt-1 p-2 bg-gray-50 rounded border text-xs text-gray-600">
+                内訳: 寄付金（直接振込を除く）¥${page1Donation.toLocaleString()} + 直接振込金額¥${page1DirectTransfer.toLocaleString()}
             </div>
         `;
         header.appendChild(infoDiv);
@@ -165,11 +168,6 @@ class DonationForm {
                             <span class="text-sm font-medium text-gray-700">直接振込の場合はチェック</span>
                         </label>
                     </div>
-                    <div class="donor-direct-date hidden mt-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">直接振込日</label>
-                        <input type="date" name="donorDirectDate_${index}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">金額 *</label>
@@ -221,7 +219,6 @@ class DonationForm {
         const sheetsContainer = row.querySelector('.donor-sheets-container');
         const sheetsSelect = row.querySelector('.donor-sheets');
         const directTransferCheckbox = row.querySelector('.donor-direct-transfer');
-        const directDateContainer = row.querySelector('.donor-direct-date');
 
         // 金額タイプ変更時の処理
         amountTypeSelect.addEventListener('change', () => {
@@ -240,19 +237,11 @@ class DonationForm {
             this.handleGiftChange(giftSelect, sheetsContainer, sheetsSelect);
         });
 
-        // 直接振込チェックボックスの処理
-        if (directTransferCheckbox && directDateContainer) {
+        // 直接振込チェックボックスの処理（日付関連は削除済み）
+        if (directTransferCheckbox) {
             directTransferCheckbox.addEventListener('change', () => {
-                if (directTransferCheckbox.checked) {
-                    directDateContainer.classList.remove('hidden');
-                } else {
-                    directDateContainer.classList.add('hidden');
-                    // チェックを外した時は日付もクリア
-                    const dateInput = directDateContainer.querySelector('input[type="date"]');
-                    if (dateInput) {
-                        dateInput.value = '';
-                    }
-                }
+                // チェックボックスの状態変更時の処理（必要に応じて追加）
+                console.log('直接振込チェックボックス:', directTransferCheckbox.checked);
             });
         }
 
@@ -267,7 +256,8 @@ class DonationForm {
         
         if (selectedValue === 'other') {
             amountInput.classList.remove('hidden');
-            giftSelect.innerHTML = '<option value="">返礼品なし</option>';
+            // 返礼品の選択肢はリセットしない（全返礼品を維持）
+            this.updateGiftOptions(giftSelect, 0); // 金額0でも全返礼品を表示
             sheetsContainer.classList.add('hidden');
         } else {
             amountInput.classList.add('hidden');
@@ -295,27 +285,27 @@ class DonationForm {
 
     // 返礼品オプションを更新（動的生成）
     updateGiftOptions(giftSelect, amount) {
-		const calculator = window.donationCalculator;
-		if (calculator && calculator.generateGiftOptions) {
-			// できるだけ再生成を避ける（同一HTMLならスキップ）
-			const next = calculator.generateGiftOptions(amount);
-			if (giftSelect.__lastOptionsHtml !== next) {
-				giftSelect.innerHTML = next;
-				giftSelect.__lastOptionsHtml = next;
-			}
-		} else {
-            // フォールバック: 従来の条件分岐
-			const next = '<option value="">返礼品なし</option>' + `
-                <option value="タオル">タオル</option>
-                <option value="お菓子大">お菓子大</option>
-                <option value="キーホルダー">キーホルダー</option>
-                <option value="お菓子小">お菓子小</option>
-                <option value="クリアファイル">クリアファイル</option>
-			`;
-			if (giftSelect.__lastOptionsHtml !== next) {
-				giftSelect.innerHTML = next;
-				giftSelect.__lastOptionsHtml = next;
-			}
+        const calculator = window.donationCalculator;
+        if (calculator && calculator.generateGiftOptions) {
+            // 設定が読み込まれている場合
+            const next = calculator.generateGiftOptions(amount);
+            if (giftSelect.__lastOptionsHtml !== next) {
+                giftSelect.innerHTML = next;
+                giftSelect.__lastOptionsHtml = next;
+            }
+        } else {
+            // フォールバック: 設定が読み込まれていない場合のデフォルト返礼品
+            const next = '<option value="">返礼品なし</option>' + `
+                <option value="towel">タオル</option>
+                <option value="sweets_large">お菓子大</option>
+                <option value="keychain">キーホルダー</option>
+                <option value="sweets_small">お菓子小</option>
+                <option value="clearfile">クリアファイル</option>
+            `;
+            if (giftSelect.__lastOptionsHtml !== next) {
+                giftSelect.innerHTML = next;
+                giftSelect.__lastOptionsHtml = next;
+            }
         }
     }
 
@@ -323,8 +313,8 @@ class DonationForm {
     handleGiftChange(giftSelect, sheetsContainer, sheetsSelect) {
         const selectedGift = giftSelect.value;
         
-        // クリアファイルが選択された場合（値は返礼品名を使用）
-        if (selectedGift === 'クリアファイル') {
+        // クリアファイルが選択された場合（値は返礼品IDを使用）
+        if (selectedGift === 'clearfile') {
             sheetsContainer.classList.remove('hidden');
             
             // 枚数オプションを更新
@@ -363,9 +353,12 @@ class DonationForm {
     validateDonationAmount(page2Total) {
         if (!this.basicInfo) return;
 
-        const page1Donation = this.basicInfo.breakdownDetails.donationAmount;
+        // 1ページ目の寄付金（直接振込を除く）＋直接振込金額（数値として確実に変換）
+        const page1Donation = parseInt(this.basicInfo.breakdownDetails.donationAmount) || 0;
+        const page1DirectTransfer = parseInt(this.basicInfo.breakdownDetails.directTransferAmount) || 0;
+        const page1TotalDonation = page1Donation + page1DirectTransfer;
         
-        if (page1Donation > 0 && page2Total !== page1Donation) {
+        if (page1TotalDonation > 0 && page2Total !== page1TotalDonation) {
             // 警告を表示
             const warningDiv = document.getElementById('amount-warning') || this.createWarningDiv();
             warningDiv.innerHTML = `
@@ -378,7 +371,10 @@ class DonationForm {
                         </div>
                         <div class="ml-3">
                             <p class="text-sm text-yellow-700">
-                                <strong>金額の不一致:</strong> 1ページ目の寄付金（¥${page1Donation.toLocaleString()}）と2ページ目の合計金額（¥${page2Total.toLocaleString()}）が一致しません。
+                                <strong>金額の不一致:</strong> 1ページ目の寄付金合計（¥${page1TotalDonation.toLocaleString()}）と2ページ目の合計金額（¥${page2Total.toLocaleString()}）が一致しません。
+                            </p>
+                            <p class="text-xs text-yellow-600 mt-1">
+                                寄付金（直接振込を除く）: ¥${page1Donation.toLocaleString()} + 直接振込金額: ¥${page1DirectTransfer.toLocaleString()} = ¥${page1TotalDonation.toLocaleString()}
                             </p>
                         </div>
                     </div>
@@ -395,10 +391,15 @@ class DonationForm {
 
     // 警告表示用のdivを作成
     createWarningDiv() {
-        const warningDiv = document.createElement('div');
-        warningDiv.id = 'amount-warning';
-        const form = document.getElementById('donationForm');
-        form.insertBefore(warningDiv, form.firstChild);
+        const warningDiv = document.getElementById('amount-warning');
+        if (!warningDiv) {
+            // フォールバック: 既存のdivが見つからない場合は動的に作成
+            const newWarningDiv = document.createElement('div');
+            newWarningDiv.id = 'amount-warning';
+            const form = document.getElementById('donationForm');
+            form.insertBefore(newWarningDiv, form.firstChild);
+            return newWarningDiv;
+        }
         return warningDiv;
     }
 
@@ -623,15 +624,16 @@ class DonationForm {
             siblingInfoEl.classList.remove('hidden');
             siblingCountEl.textContent = `${basicInfo.siblingCount}人`;
             
-            // 兄弟の名前を表示
+            // 兄弟の情報を表示
             siblingNamesEl.innerHTML = '';
             for (let i = 1; i <= basicInfo.siblingCount; i++) {
+                const siblingGrade = basicInfo[`sibling${i}Grade`];
                 const siblingName = basicInfo[`sibling${i}Name`];
                 if (siblingName) {
                     const nameDiv = document.createElement('div');
                     nameDiv.className = 'flex justify-between';
                     nameDiv.innerHTML = `
-                        <span class="text-gray-600">兄弟${i}:</span>
+                        <span class="text-gray-600">兄弟${i}（${siblingGrade || '学年未設定'}）:</span>
                         <span class="font-medium">${siblingName}</span>
                     `;
                     siblingNamesEl.appendChild(nameDiv);
@@ -678,7 +680,7 @@ class DonationForm {
         const otherFee = breakdown.otherFee || 0;
         const encouragementAmount = breakdown.hasEncouragementFee ? 1000 : 0; // 激励会協力金
         
-        // 合計を計算
+        // 合計を計算（直接振込金額は含めない）
         const breakdownTotal = donationAmount + burdenAmount + tshirtAmount + otherFee + encouragementAmount;
         
         // 表示
@@ -715,25 +717,27 @@ class DonationForm {
             const donorDiv = document.createElement('div');
             donorDiv.className = 'bg-white rounded p-2 text-xs border';
             
-            // 返礼品の表示
-            let giftDisplay = donor.gift || 'なし';
-            if (donor.gift === 'クリアファイル' && donor.sheets) {
-                giftDisplay = `クリアファイル(${donor.sheets}枚)`;
+            // 返礼品の表示（ID→名前の変換）
+            let giftDisplay = 'なし';
+            if (donor.gift) {
+                // 返礼品IDから名前への変換
+                const giftName = this.getGiftDisplayName(donor.gift, donor.sheets);
+                giftDisplay = giftName;
             }
             
-            // 直接振込日の表示
-            const directTransferDateDisplay = donor.isDirectTransfer && donor.directTransferDate 
-                ? `<div>直接振込日: ${donor.directTransferDate}</div>` 
+            // 直接振込の表示
+            const directTransferDisplay = donor.isDirectTransfer 
+                ? `<div class="text-green-600 font-medium">✓ 直接振込</div>` 
                 : '';
             
             donorDiv.innerHTML = `
                 <div class="flex justify-between items-start">
                     <div class="flex-1">
                         <div class="font-medium text-gray-800">${donor.name}</div>
+                        ${directTransferDisplay}
                         <div class="text-gray-600 mt-1">
                             <div>金額: ¥${donor.amount.toLocaleString()}</div>
                             <div>返礼品: ${giftDisplay}</div>
-                            ${directTransferDateDisplay}
                             ${donor.note ? `<div>その他特筆事項: ${donor.note}</div>` : ''}
                         </div>
                     </div>
@@ -770,6 +774,14 @@ class DonationForm {
             }
         });
         
+        // 1ページ目の寄付金合計を計算
+        let page1TotalDonation = 0;
+        if (this.basicInfo && this.basicInfo.breakdownDetails) {
+            const page1Donation = parseInt(this.basicInfo.breakdownDetails.donationAmount) || 0;
+            const page1DirectTransfer = parseInt(this.basicInfo.breakdownDetails.directTransferAmount) || 0;
+            page1TotalDonation = page1Donation + page1DirectTransfer;
+        }
+        
         // 表示
         const totalDonorsEl = document.getElementById('confirm-totalDonors');
         const totalAmountEl = document.getElementById('confirm-totalAmount');
@@ -778,6 +790,20 @@ class DonationForm {
         if (totalDonorsEl) totalDonorsEl.textContent = totalDonors.toString();
         if (totalAmountEl) totalAmountEl.textContent = `¥${totalAmount.toLocaleString()}`;
         if (totalGiftsEl) totalGiftsEl.textContent = totalGifts.toString();
+        
+        // 1ページ目との照合情報を表示
+        const page1TotalEl = document.getElementById('confirm-page1Total');
+        if (page1TotalEl) {
+            page1TotalEl.textContent = `¥${page1TotalDonation.toLocaleString()}`;
+        }
+        
+        // 照合結果を表示
+        const matchResultEl = document.getElementById('confirm-matchResult');
+        if (matchResultEl) {
+            const isMatch = totalAmount === page1TotalDonation;
+            matchResultEl.textContent = isMatch ? '一致' : '不一致';
+            matchResultEl.className = isMatch ? 'text-green-600 font-medium' : 'text-red-600 font-medium';
+        }
     }
 
     // 確認後の送信処理
@@ -816,7 +842,7 @@ class DonationForm {
         }
 
         if (!this.validateAmounts()) {
-            alert('金額の照合に失敗しました。1ページ目の寄付金と2ページ目の合計金額を確認してください。');
+            alert('金額の照合に失敗しました。1ページ目の寄付金合計（寄付金＋直接振込金額）と2ページ目の合計金額を確認してください。');
             return;
         }
 
@@ -841,14 +867,19 @@ class DonationForm {
 
         const calculator = new DonationCalculator();
         const totals = calculator.calculateTotals();
-        const page1Donation = this.basicInfo.breakdownDetails.donationAmount;
+        
+        // 1ページ目の寄付金（直接振込を除く）＋直接振込金額
+        const page1Donation = parseInt(this.basicInfo.breakdownDetails.donationAmount) || 0;
+        const page1DirectTransfer = parseInt(this.basicInfo.breakdownDetails.directTransferAmount) || 0;
+        const page1TotalDonation = page1Donation + page1DirectTransfer;
 
-        // 1ページ目の寄付金が0の場合は照合しない
-        if (page1Donation === 0) {
+        // 1ページ目の寄付金合計が0の場合は照合しない
+        if (page1TotalDonation === 0) {
             return true;
         }
 
-        return totals.totalAmount === page1Donation;
+        // 1ページ目の寄付金合計と2ページ目の合計金額を照合
+        return totals.totalAmount === page1TotalDonation;
     }
 
     // フォームデータを収集
@@ -905,6 +936,23 @@ class DonationForm {
             });
         });
 
+        // デバッグログ：基本情報の確認
+        console.log('=== 基本情報デバッグ ===');
+        console.log('basicInfo全体:', JSON.stringify(data.basicInfo, null, 2));
+        console.log('basicInfo.basicInfo:', JSON.stringify(data.basicInfo.basicInfo, null, 2));
+        console.log('siblingCount:', data.basicInfo.basicInfo.siblingCount);
+        console.log('siblingCount type:', typeof data.basicInfo.basicInfo.siblingCount);
+        console.log('hasSibling:', data.basicInfo.basicInfo.hasSibling);
+        console.log('hasSibling type:', typeof data.basicInfo.basicInfo.hasSibling);
+        
+        // デバッグログ：寄付者情報の確認
+        console.log('寄付者情報の詳細（フロントエンド）:', data.donors.map(donor => ({
+            name: donor.name,
+            amount: donor.amount,
+            isDirectTransfer: donor.isDirectTransfer,
+            type: typeof donor.isDirectTransfer
+        })));
+
         return data;
     }
 
@@ -940,6 +988,49 @@ class DonationForm {
         window.location.href = 'receipt.html';
     }
 
+    // 返礼品IDから表示名を取得する関数
+    getGiftDisplayName(giftId, sheets = null) {
+        // 設定用ブックの返礼品設定を取得
+        if (window.googleSheetsManager && window.googleSheetsManager.settings && window.googleSheetsManager.settings.giftRules) {
+            const giftRules = window.googleSheetsManager.settings.giftRules;
+            
+            // 返礼品IDから名前を取得
+            if (giftRules[giftId]) {
+                const giftName = giftRules[giftId].name;
+                
+                // クリアファイルの場合は枚数を追加
+                if (giftId === 'clearfile' && sheets) {
+                    return `${giftName}(${sheets}枚)`;
+                }
+                
+                return giftName;
+            }
+        }
+        
+        // フォールバック: デフォルトの返礼品名
+        const defaultGiftNames = {
+            'towel': 'タオル',
+            'sweets_large': 'お菓子大',
+            'keychain': 'キーホルダー',
+            'sweets_small': 'お菓子小',
+            'clearfile': '③ クリアファイル'
+        };
+        
+        if (defaultGiftNames[giftId]) {
+            const giftName = defaultGiftNames[giftId];
+            
+            // クリアファイルの場合は枚数を追加
+            if (giftId === 'clearfile' && sheets) {
+                return `${giftName}(${sheets}枚)`;
+            }
+            
+            return giftName;
+        }
+        
+        // それ以外の場合はIDをそのまま返す
+        return giftId;
+    }
+
     // フォームをリセット
     resetForm() {
         this.form.reset();
@@ -952,15 +1043,85 @@ class DonationForm {
     // フォーム設定を読み込み
     async loadFormSettings() {
         try {
+            // ローディング表示を開始し、フォームを無効化
+            this.showSettingsLoading(true);
+            this.setFormEnabled(false);
+            
             if (window.googleSheetsManager) {
-                const settings = await window.googleSheetsManager.getFormSettings();
-                if (settings) {
-                    this.updateFormSubtitle(settings);
+                // フォーム設定を取得
+                const formSettings = await window.googleSheetsManager.getFormSettings();
+                if (formSettings) {
+                    this.updateFormSubtitle(formSettings);
+                }
+                
+                // 返礼品・金額オプション設定を取得
+                await window.googleSheetsManager.loadSettings();
+                if (window.googleSheetsManager.settings) {
+                    // 設定が読み込まれた後に、既存の寄付者行の返礼品オプションを更新
+                    this.updateExistingDonorRows();
                 }
             }
+            
+            // ローディング表示を終了し、フォームを有効化
+            this.showSettingsLoading(false);
+            this.setFormEnabled(true);
+            
         } catch (error) {
             console.error('フォーム設定の読み込みエラー:', error);
-            // エラーの場合はデフォルト値のまま
+            // エラーの場合はローディング表示を終了し、フォームを有効化
+            this.showSettingsLoading(false);
+            this.setFormEnabled(true);
+            this.showErrorMessage('設定の読み込みに失敗しました。基本的な機能のみ利用可能です。');
+        }
+    }
+
+    // 設定読み込み中のローディング表示
+    showSettingsLoading(show) {
+        const loadingElement = document.getElementById('settings-loading');
+        if (loadingElement) {
+            if (show) {
+                loadingElement.classList.remove('hidden');
+            } else {
+                loadingElement.classList.add('hidden');
+            }
+        }
+    }
+
+    // フォームの有効/無効を切り替え
+    setFormEnabled(enabled) {
+        const form = document.getElementById('donationForm');
+        if (form) {
+            const inputs = form.querySelectorAll('input, select, textarea, button');
+            inputs.forEach(input => {
+                if (input.type !== 'submit') {
+                    input.disabled = !enabled;
+                }
+            });
+        }
+        
+        // 寄付者追加ボタンも制御
+        const addDonorBtn = document.getElementById('addDonorBtn');
+        if (addDonorBtn) {
+            addDonorBtn.disabled = !enabled;
+        }
+    }
+
+    // エラーメッセージを表示
+    showErrorMessage(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'mt-4 p-3 bg-red-50 border border-red-200 rounded-lg';
+        errorDiv.innerHTML = `
+            <div class="flex items-center space-x-2">
+                <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-sm text-red-700">${message}</span>
+            </div>
+        `;
+        
+        const header = document.querySelector('header');
+        if (header) {
+            header.appendChild(errorDiv);
         }
     }
 
@@ -971,6 +1132,26 @@ class DonationForm {
         if (subtitleElement && settings.formSubtitle) {
             subtitleElement.textContent = settings.formSubtitle;
         }
+    }
+
+    // 既存の寄付者行の返礼品オプションを更新
+    updateExistingDonorRows() {
+        const donorRows = document.querySelectorAll('.donor-row');
+        donorRows.forEach(row => {
+            const giftSelect = row.querySelector('.donor-gift');
+            if (giftSelect) {
+                // 現在選択されている値を保存
+                const currentValue = giftSelect.value;
+                
+                // 返礼品オプションを更新
+                this.updateGiftOptions(giftSelect, 0);
+                
+                // 元の値を復元（設定が変わっていない場合）
+                if (currentValue && giftSelect.querySelector(`option[value="${currentValue}"]`)) {
+                    giftSelect.value = currentValue;
+                }
+            }
+        });
     }
 }
 

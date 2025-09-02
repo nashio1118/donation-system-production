@@ -2,8 +2,6 @@
 class BasicInfoForm {
     constructor() {
         this.form = document.getElementById('basicInfoForm');
-        // デモフラグの引き継ぎ（page1.html?demo=1 で来た場合、次ページ以降でも維持）
-        this.ensureDemoFlag();
         this.initializeEventListeners();
         this.setDefaultDate();
         this.loadFormSettings(); // フォーム設定を読み込み
@@ -17,17 +15,7 @@ class BasicInfoForm {
         }, 100);
     }
 
-    // URLパラメータに demo=1 があれば sessionStorage に保存
-    ensureDemoFlag() {
-        try {
-            const params = new URLSearchParams(window.location.search || '');
-            if (params.get('demo') === '1') {
-                sessionStorage.setItem('isDemo', '1');
-            }
-        } catch (e) {
-            // 何もしない（セッションストレージ未対応環境の安全策）
-        }
-    }
+
 
     initializeEventListeners() {
         this.form.addEventListener('submit', (e) => this.handleSubmit(e));
@@ -67,6 +55,10 @@ class BasicInfoForm {
     // フォーム設定を読み込み
     async loadFormSettings() {
         try {
+            // ローディング表示を開始し、フォームを無効化
+            this.showSettingsLoading(true);
+            this.setFormEnabled(false);
+            
             if (window.googleSheetsManager) {
                 // フォーム設定を取得
                 const formSettings = await window.googleSheetsManager.getFormSettings();
@@ -76,22 +68,28 @@ class BasicInfoForm {
                 
                 // 負担金設定を取得
                 await window.googleSheetsManager.loadSettings();
-                if (window.googleSheetsManager.settings) {
-                    this.updateBurdenFeeLabel();
-                    this.toggleEncouragementVisibility();
-                    // 設定読込直後に負担金を計算（兄弟がいなくても1人分）
-                    this.updateBurdenFee();
-                    this.updateBreakdown();
-                }
-                // 設定が未取得/取得失敗でも、少なくとも1人分で初期計算を実行
-                if (!window.googleSheetsManager.settings) {
-                    this.updateBurdenFee();
-                    this.updateBreakdown();
-                }
+                this.updateBurdenFeeLabel();
+                this.toggleEncouragementVisibility();
+                // 設定読込直後に負担金を計算（兄弟がいなくても1人分）
+                this.updateBurdenFee();
+                this.updateBreakdown();
             }
+            // 設定が未取得/取得失敗でも、少なくとも1人分で初期計算を実行
+            if (!window.googleSheetsManager.settings) {
+                this.updateBurdenFee();
+                this.updateBreakdown();
+            }
+            
+            // ローディング表示を終了し、フォームを有効化
+            this.showSettingsLoading(false);
+            this.setFormEnabled(true);
+            
         } catch (error) {
             console.error('フォーム設定の読み込みエラー:', error);
-            // エラーの場合はデフォルト値のまま
+            // エラーの場合はローディング表示を終了し、フォームを有効化
+            this.showSettingsLoading(false);
+            this.setFormEnabled(true);
+            this.showErrorMessage('設定の読み込みに失敗しました。基本的な機能のみ利用可能です。');
         }
     }
 
@@ -192,16 +190,29 @@ class BasicInfoForm {
         if (siblingCount > 0) {
             siblingNamesContainer.classList.remove('hidden');
             
-            // 兄弟の数だけ入力欄を作成
             for (let i = 1; i <= siblingCount; i++) {
-                const fieldDiv = document.createElement('div');
-                fieldDiv.innerHTML = `
-                    <label for="sibling${i}Name" class="block text-sm font-medium text-gray-700 mb-1">兄弟${i}の名前</label>
-                    <input type="text" id="sibling${i}Name" name="sibling${i}Name"
+                const siblingField = document.createElement('div');
+                siblingField.className = 'space-y-2';
+                siblingField.innerHTML = `
+                    <label class="block text-sm font-medium text-gray-700">
+                        兄弟${i}の学年
+                    </label>
+                    <select id="sibling${i}Grade" name="sibling${i}Grade" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">学年を選択</option>
+                        <option value="1年">1年</option>
+                        <option value="2年">2年</option>
+                        <option value="3年">3年</option>
+                    </select>
+                    
+                    <label class="block text-sm font-medium text-gray-700">
+                        兄弟${i}の名前
+                    </label>
+                    <input type="text" id="sibling${i}Name" name="sibling${i}Name" 
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           placeholder="例：田中花子">
+                           placeholder="兄弟${i}の名前を入力">
                 `;
-                siblingNamesFields.appendChild(fieldDiv);
+                siblingNamesFields.appendChild(siblingField);
             }
         } else {
             siblingNamesContainer.classList.add('hidden');
@@ -282,8 +293,12 @@ class BasicInfoForm {
                     // 兄弟の名前を復元
                     for (let i = 1; i <= parseInt(siblingCount); i++) {
                         const siblingNameField = document.getElementById(`sibling${i}Name`);
+                        const siblingGradeField = document.getElementById(`sibling${i}Grade`);
                         if (siblingNameField && data.basicInfo[`sibling${i}Name`]) {
                             siblingNameField.value = data.basicInfo[`sibling${i}Name`];
+                        }
+                        if (siblingGradeField && data.basicInfo[`sibling${i}Grade`]) {
+                            siblingGradeField.value = data.basicInfo[`sibling${i}Grade`];
                         }
                     }
                 }
@@ -351,7 +366,7 @@ class BasicInfoForm {
         const otherFee = parseInt(document.getElementById('otherFee').value) || 0;
         const hasEncouragementFee = document.querySelector('input[name="hasEncouragementFee"]').checked;
 
-        // 各項目の金額を計算
+        // 各項目の金額を計算（直接振込金額は含めない）
         const encouragementAmount = hasEncouragementFee ? 1000 : 0; // 激励会協力金（設定で金額管理）
 
         const total = donationAmount + burdenFeeAmount + tshirtAmount + encouragementAmount + otherFee;
@@ -359,17 +374,16 @@ class BasicInfoForm {
         // 合計を表示
         document.getElementById('totalBreakdown').textContent = `¥${total.toLocaleString()}`;
 
-        // 振込金額と照合
+        // 振込金額と照合（直接振込金額は含めない）
         this.validateTransferAmount(total);
     }
 
     // 振込金額との照合
     validateTransferAmount(breakdownTotal) {
         const transferAmount = parseInt(document.getElementById('transferAmount').value) || 0;
-        const directTransferAmount = parseInt(document.getElementById('directTransferAmount').value) || 0;
-        const totalTransferAmount = transferAmount + directTransferAmount;
         
-        if (totalTransferAmount > 0 && breakdownTotal !== totalTransferAmount) {
+        // 内訳合計と振込金額（直接振込を除く）を照合
+        if (transferAmount > 0 && breakdownTotal !== transferAmount) {
             // 警告を表示
             const warningDiv = document.getElementById('transfer-warning') || this.createTransferWarningDiv();
             warningDiv.innerHTML = `
@@ -382,10 +396,10 @@ class BasicInfoForm {
                         </div>
                         <div class="ml-3">
                             <p class="text-sm text-yellow-700">
-                                <strong>金額の不一致:</strong> 内訳合計（¥${breakdownTotal.toLocaleString()}）と振込金額合計（¥${totalTransferAmount.toLocaleString()}）が一致しません。
+                                <strong>金額の不一致:</strong> 内訳合計（¥${breakdownTotal.toLocaleString()}）と振込金額（¥${transferAmount.toLocaleString()}）が一致しません。
                             </p>
                             <p class="text-xs text-yellow-600 mt-1">
-                                振込金額: ¥${transferAmount.toLocaleString()} + 直接振込金額: ¥${directTransferAmount.toLocaleString()} = ¥${totalTransferAmount.toLocaleString()}
+                                内訳合計と振込金額（直接振込を除く）が一致する必要があります。
                             </p>
                         </div>
                     </div>
@@ -402,10 +416,15 @@ class BasicInfoForm {
 
     // 振込金額警告表示用のdivを作成
     createTransferWarningDiv() {
-        const warningDiv = document.createElement('div');
-        warningDiv.id = 'transfer-warning';
-        const form = document.getElementById('basicInfoForm');
-        form.insertBefore(warningDiv, form.firstChild);
+        const warningDiv = document.getElementById('transfer-warning');
+        if (!warningDiv) {
+            // フォールバック: 既存のdivが見つからない場合は動的に作成
+            const newWarningDiv = document.createElement('div');
+            newWarningDiv.id = 'transfer-warning';
+            const form = document.getElementById('basicInfoForm');
+            form.insertBefore(newWarningDiv, form.firstChild);
+            return newWarningDiv;
+        }
         return warningDiv;
     }
 
@@ -419,7 +438,7 @@ class BasicInfoForm {
         }
 
         if (!this.validateAmounts()) {
-            alert('金額の照合に失敗しました。内訳合計と振込金額合計（振込金額＋直接振込金額）を確認してください。');
+            alert('金額の照合に失敗しました。内訳合計と振込金額（直接振込を除く）が一致する必要があります。');
             return;
         }
 
@@ -456,8 +475,6 @@ class BasicInfoForm {
     // 金額照合の検証
     validateAmounts() {
         const transferAmount = parseInt(document.getElementById('transferAmount').value) || 0;
-        const directTransferAmount = parseInt(document.getElementById('directTransferAmount').value) || 0;
-        const totalTransferAmount = transferAmount + directTransferAmount;
         
         const donationAmount = parseInt(document.getElementById('donationAmount').value) || 0;
         const burdenFeeAmount = parseInt(document.getElementById('burdenFeeAmount').value) || 0;
@@ -469,12 +486,13 @@ class BasicInfoForm {
 
         const breakdownTotal = donationAmount + burdenFeeAmount + tshirtAmount + encouragementAmount + otherFee;
 
-        // 振込金額合計が0の場合は照合しない
-        if (totalTransferAmount === 0) {
+        // 振込金額が0の場合は照合しない
+        if (transferAmount === 0) {
             return true;
         }
 
-        return breakdownTotal === totalTransferAmount;
+        // 内訳合計と振込金額（直接振込を除く）が一致するかチェック
+        return breakdownTotal === transferAmount;
     }
 
     // フォームデータを収集
@@ -484,7 +502,6 @@ class BasicInfoForm {
         // 振込金額の取得
         const transferAmount = parseInt(formData.get('transferAmount')) || 0; // 振込金額（直接振込を除く）
         const directTransferAmount = parseInt(formData.get('directTransferAmount')) || 0; // 直接振込金額
-        const totalTransferAmount = transferAmount + directTransferAmount; // 合計（照合用）
         
         // 負担金の金額を取得
         const burdenFeeAmount = parseInt(formData.get('burdenFee')) || 0;
@@ -494,7 +511,29 @@ class BasicInfoForm {
         
         // 兄弟情報を収集
         const hasSibling = formData.get('hasSibling') === 'on';
-        const siblingCount = parseInt(formData.get('siblingCount')) || 0;
+        let siblingCount = 0;
+        
+        if (hasSibling) {
+            // 兄弟がいる場合のみ人数を取得
+            const rawSiblingCount = formData.get('siblingCount');
+            if (rawSiblingCount && rawSiblingCount !== '') {
+                siblingCount = parseInt(rawSiblingCount) || 0;
+            }
+        }
+        
+        // 確実に数値として設定
+        siblingCount = Number(siblingCount);
+        
+        // デバッグ: 兄弟情報の収集確認
+        console.log('=== 兄弟情報収集デバッグ ===');
+        console.log('hasSibling checkbox:', formData.get('hasSibling'));
+        console.log('hasSibling parsed:', hasSibling);
+        console.log('siblingCount raw:', formData.get('siblingCount'));
+        console.log('siblingCount parsed:', siblingCount);
+        console.log('siblingCount type:', typeof siblingCount);
+        console.log('siblingCount === 0:', siblingCount === 0);
+        console.log('siblingCount === "0":', siblingCount === "0");
+        console.log('siblingCount == 0:', siblingCount == 0);
         
         // GASが期待する構造に合わせてデータを構築
         const data = {
@@ -518,12 +557,43 @@ class BasicInfoForm {
         };
 
         // 兄弟の名前を追加
+        console.log('兄弟の名前追加処理開始 - siblingCount:', siblingCount);
         for (let i = 1; i <= siblingCount; i++) {
             const siblingName = formData.get(`sibling${i}Name`);
+            const siblingGrade = formData.get(`sibling${i}Grade`);
+            console.log(`兄弟${i}: name="${siblingName}", grade="${siblingGrade}"`);
             if (siblingName) {
                 data.basicInfo[`sibling${i}Name`] = siblingName;
             }
+            if (siblingGrade) {
+                data.basicInfo[`sibling${i}Grade`] = siblingGrade;
+            }
         }
+        console.log('兄弟の名前追加処理完了');
+
+        // デバッグログ：兄弟情報の確認
+        console.log('兄弟情報の詳細（フロントエンド）:', {
+            hasSibling: hasSibling,
+            hasSiblingType: typeof hasSibling,
+            siblingCount: siblingCount,
+            siblingCountType: typeof siblingCount,
+            sibling1Grade: data.basicInfo.sibling1Grade,
+            sibling1Name: data.basicInfo.sibling1Name,
+            sibling2Grade: data.basicInfo.sibling2Grade,
+            sibling2Name: data.basicInfo.sibling2Name,
+            sibling3Grade: data.basicInfo.sibling3Grade,
+            sibling3Name: data.basicInfo.sibling3Name,
+            sibling4Grade: data.basicInfo.sibling4Grade,
+            sibling4Name: data.basicInfo.sibling4Name,
+            sibling5Grade: data.basicInfo.sibling5Grade,
+            sibling5Name: data.basicInfo.sibling5Name
+        });
+
+        // デバッグ: 最終的なデータ構造の確認
+        console.log('=== 最終的なデータ構造デバッグ ===');
+        console.log('送信されるデータ全体:', JSON.stringify(data, null, 2));
+        console.log('basicInfo.siblingCount:', data.basicInfo.siblingCount);
+        console.log('basicInfo.siblingCount type:', typeof data.basicInfo.siblingCount);
 
         // 内訳の詳細計算（表示用）
         const encouragementAmount = hasEncouragementFee ? 1000 : 0;
@@ -531,6 +601,9 @@ class BasicInfoForm {
         data.breakdownDetails.burdenFeeAmount = burdenFeeAmount;
         data.breakdownDetails.encouragementAmount = encouragementAmount;
         data.breakdownDetails.total = data.breakdownDetails.donationAmount + burdenFeeAmount + data.breakdownDetails.tshirtAmount + encouragementAmount + data.breakdownDetails.otherFee;
+        
+        // 2ページ目との照合用：寄付金（直接振込を除く）＋直接振込金額
+        data.breakdownDetails.totalDonationForPage2 = data.breakdownDetails.donationAmount + directTransferAmount;
 
         return data;
     }
@@ -539,6 +612,50 @@ class BasicInfoForm {
     showLoading(show) {
         const loading = document.getElementById('loading');
         loading.classList.toggle('hidden', !show);
+    }
+
+    // 設定読み込み中のローディング表示
+    showSettingsLoading(show) {
+        const loadingElement = document.getElementById('settings-loading');
+        if (loadingElement) {
+            if (show) {
+                loadingElement.classList.remove('hidden');
+            } else {
+                loadingElement.classList.add('hidden');
+            }
+        }
+    }
+
+    // フォームの有効/無効を切り替え
+    setFormEnabled(enabled) {
+        const form = document.getElementById('basicInfoForm');
+        if (form) {
+            const inputs = form.querySelectorAll('input, select, textarea, button');
+            inputs.forEach(input => {
+                if (input.type !== 'submit') {
+                    input.disabled = !enabled;
+                }
+            });
+        }
+    }
+
+    // エラーメッセージを表示
+    showErrorMessage(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'mt-4 p-3 bg-red-50 border border-red-200 rounded-lg';
+        errorDiv.innerHTML = `
+            <div class="flex items-center space-x-2">
+                <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-sm text-red-700">${message}</span>
+            </div>
+        `;
+        
+        const header = document.querySelector('header');
+        if (header) {
+            header.appendChild(errorDiv);
+        }
     }
 }
 

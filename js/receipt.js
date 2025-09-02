@@ -117,15 +117,16 @@ class ReceiptManager {
             siblingInfoEl.classList.remove('hidden');
             siblingCountEl.textContent = `${basicInfo.siblingCount}人`;
             
-            // 兄弟の名前を表示
+            // 兄弟の情報を表示
             siblingNamesEl.innerHTML = '';
             for (let i = 1; i <= basicInfo.siblingCount; i++) {
+                const siblingGrade = basicInfo[`sibling${i}Grade`];
                 const siblingName = basicInfo[`sibling${i}Name`];
                 if (siblingName) {
                     const nameDiv = document.createElement('div');
                     nameDiv.className = 'flex justify-between';
                     nameDiv.innerHTML = `
-                        <span class="text-gray-600">兄弟${i}:</span>
+                        <span class="text-gray-600">兄弟${i}（${siblingGrade || '学年未設定'}）:</span>
                         <span class="font-medium">${siblingName}</span>
                     `;
                     siblingNamesEl.appendChild(nameDiv);
@@ -169,7 +170,7 @@ class ReceiptManager {
         const otherFee = breakdown.otherFee || 0;
         const encouragementAmount = breakdown.hasEncouragementFee ? 1000 : 0;
         
-        // 合計を計算
+        // 合計を計算（直接振込金額は含めない）
         const breakdownTotal = donationAmount + burdenAmount + tshirtAmount + otherFee + encouragementAmount;
         
         // 表示
@@ -204,25 +205,27 @@ class ReceiptManager {
             const donorDiv = document.createElement('div');
             donorDiv.className = 'bg-gray-50 rounded p-2 text-xs';
             
-            // 返礼品の表示
-            let giftDisplay = donor.gift || 'なし';
-            if (donor.gift === 'クリアファイル' && donor.sheets) {
-                giftDisplay = `クリアファイル(${donor.sheets}枚)`;
+            // 返礼品の表示（ID→名前の変換）
+            let giftDisplay = 'なし';
+            if (donor.gift) {
+                // 返礼品IDから名前への変換
+                const giftName = this.getGiftDisplayName(donor.gift, donor.sheets);
+                giftDisplay = giftName;
             }
             
-            // 直接振込日の表示
-            const directTransferDateDisplay = donor.isDirectTransfer && donor.directTransferDate 
-                ? `<div>直接振込日: ${donor.directTransferDate}</div>` 
+            // 直接振込の表示
+            const directTransferDisplay = donor.isDirectTransfer 
+                ? `<div class="text-green-600 font-medium">✓ 直接振込</div>` 
                 : '';
             
             donorDiv.innerHTML = `
                 <div class="flex justify-between items-start">
                     <div class="flex-1">
                         <div class="font-medium text-gray-800">${donor.name}</div>
+                        ${directTransferDisplay}
                         <div class="text-gray-600 mt-1">
                             <div>金額: ¥${donor.amount.toLocaleString()}</div>
                             <div>返礼品: ${giftDisplay}</div>
-                            ${directTransferDateDisplay}
                             ${donor.note ? `<div>その他特筆事項: ${donor.note}</div>` : ''}
                         </div>
                     </div>
@@ -260,10 +263,75 @@ class ReceiptManager {
             }
         });
         
+        // 1ページ目の寄付金合計を計算
+        let page1TotalDonation = 0;
+        if (this.basicInfo && this.basicInfo.breakdownDetails) {
+            const page1Donation = parseInt(this.basicInfo.breakdownDetails.donationAmount) || 0;
+            const page1DirectTransfer = parseInt(this.basicInfo.breakdownDetails.directTransferAmount) || 0;
+            page1TotalDonation = page1Donation + page1DirectTransfer;
+        }
+        
         // 表示
         document.getElementById('receipt-totalDonors').textContent = totalDonors.toString();
         document.getElementById('receipt-totalAmount').textContent = `¥${totalAmount.toLocaleString()}`;
         document.getElementById('receipt-totalGifts').textContent = totalGifts.toString();
+        
+        // 1ページ目との照合情報を表示（要素が存在する場合）
+        const page1TotalEl = document.getElementById('receipt-page1Total');
+        if (page1TotalEl) {
+            page1TotalEl.textContent = `¥${page1TotalDonation.toLocaleString()}`;
+        }
+        
+        // 照合結果を表示（要素が存在する場合）
+        const matchResultEl = document.getElementById('receipt-matchResult');
+        if (matchResultEl) {
+            const isMatch = totalAmount === page1TotalDonation;
+            matchResultEl.textContent = isMatch ? '一致' : '不一致';
+            matchResultEl.className = isMatch ? 'text-green-600 font-medium' : 'text-red-600 font-medium';
+        }
+    }
+
+    // 返礼品IDから表示名を取得する関数
+    getGiftDisplayName(giftId, sheets = null) {
+        // 設定用ブックの返礼品設定を取得
+        if (window.googleSheetsManager && window.googleSheetsManager.settings && window.googleSheetsManager.settings.giftRules) {
+            const giftRules = window.googleSheetsManager.settings.giftRules;
+            
+            // 返礼品IDから名前を取得
+            if (giftRules[giftId]) {
+                const giftName = giftRules[giftId].name;
+                
+                // クリアファイルの場合は枚数を追加
+                if (giftId === 'clearfile' && sheets) {
+                    return `${giftName}(${sheets}枚)`;
+                }
+                
+                return giftName;
+            }
+        }
+        
+        // フォールバック: デフォルトの返礼品名
+        const defaultGiftNames = {
+            'towel': 'タオル',
+            'sweets_large': 'お菓子大',
+            'keychain': 'キーホルダー',
+            'sweets_small': 'お菓子小',
+            'clearfile': '③ クリアファイル'
+        };
+        
+        if (defaultGiftNames[giftId]) {
+            const giftName = defaultGiftNames[giftId];
+            
+            // クリアファイルの場合は枚数を追加
+            if (giftId === 'clearfile' && sheets) {
+                return `${giftName}(${sheets}枚)`;
+            }
+            
+            return giftName;
+        }
+        
+        // それ以外の場合はIDをそのまま返す
+        return giftId;
     }
 
     // 送信日時を表示

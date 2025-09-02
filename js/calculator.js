@@ -13,7 +13,7 @@ class DonationCalculator {
             sweets_large: { minAmount: 10000, name: 'お菓子大', category: 'standard' },
             keychain: { minAmount: 5000, name: 'キーホルダー', category: 'standard' },
             sweets_small: { minAmount: 5000, name: 'お菓子小', category: 'standard' },
-            clearfile: { minAmount: 0, name: 'クリアファイル', category: 'basic', hasSheets: true }
+            clearfile: { minAmount: 0, name: '③ クリアファイル', category: 'basic', hasSheets: true }
         };
     }
 
@@ -21,6 +21,7 @@ class DonationCalculator {
     generateGiftOptions(_amount) {
         const options = ['<option value="">返礼品なし</option>'];
         Object.entries(this.giftRules).forEach(([key, rule]) => {
+            // 値はID、表示は名前（IDで統一）
             options.push(`<option value="${key}">${rule.name}</option>`);
         });
         return options.join('');

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>兄弟の人数テスト</title>
+</head>
+<body>
+    <h1>兄弟の人数テスト</h1>
+    
+    <form id="testForm">
+        <div>
+            <label>
+                <input type="checkbox" id="hasSibling" name="hasSibling">
+                兄弟がいる
+            </label>
+        </div>
+        
+        <div id="siblingCountContainer" style="display: none;">
+            <label for="siblingCount">兄弟の人数（本人を除く）:</label>
+            <select id="siblingCount" name="siblingCount">
+                <option value="">人数を選択</option>
+                <option value="0">0人</option>
+                <option value="1">1人</option>
+                <option value="2">2人</option>
+                <option value="3">3人</option>
+                <option value="4">4人</option>
+                <option value="5">5人</option>
+            </select>
+        </div>
+        
+        <button type="submit">テスト送信</button>
+    </form>
+    
+    <div id="result"></div>
+    
+    <script>
+        const hasSiblingCheckbox = document.getElementById('hasSibling');
+        const siblingCountContainer = document.getElementById('siblingCountContainer');
+        const siblingCountSelect = document.getElementById('siblingCount');
+        const form = document.getElementById('testForm');
+        const resultDiv = document.getElementById('result');
+        
+        // 兄弟の有無で人数選択の表示/非表示を切り替え
+        hasSiblingCheckbox.addEventListener('change', () => {
+            if (hasSiblingCheckbox.checked) {
+                siblingCountContainer.style.display = 'block';
+            } else {
+                siblingCountContainer.style.display = 'none';
+                siblingCountSelect.value = '';
+            }
+        });
+        
+        // フォーム送信時のテスト
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            
+            // 兄弟情報を収集
+            const hasSibling = formData.get('hasSibling') === 'on';
+            const siblingCount = parseInt(formData.get('siblingCount')) || 0;
+            
+            console.log('=== テスト結果 ===');
+            console.log('hasSibling checkbox:', formData.get('hasSibling'));
+            console.log('hasSibling parsed:', hasSibling);
+            console.log('siblingCount raw:', formData.get('siblingCount'));
+            console.log('siblingCount parsed:', siblingCount);
+            console.log('siblingCount type:', typeof siblingCount);
+            
+            // 結果を表示
+            resultDiv.innerHTML = `
+                <h3>テスト結果:</h3>
+                <p>hasSibling checkbox: ${formData.get('hasSibling')}</p>
+                <p>hasSibling parsed: ${hasSibling}</p>
+                <p>siblingCount raw: ${formData.get('siblingCount')}</p>
+                <p>siblingCount parsed: ${siblingCount}</p>
+                <p>siblingCount type: ${typeof siblingCount}</p>
+            `;
+        });
+    </script>
+</body>
+</html>
