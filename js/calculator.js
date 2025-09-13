@@ -107,31 +107,10 @@ class DonationCalculator {
     }
 
     // 金額に基づいて返礼品を自動選択
-    autoSelectGift(amountInput, giftSelect) {
-        const amount = parseInt(amountInput.value) || 0;
-        
-        // 金額に応じて適切な返礼品を提案
-        let suggestedGift = '';
-        for (const [giftKey, rule] of Object.entries(this.giftRules)) {
-            if (amount >= rule.minAmount) {
-                suggestedGift = giftKey;
-            }
-        }
-
-        // 現在選択されている返礼品がない場合のみ自動選択
-        if (!giftSelect.value && suggestedGift) {
-            giftSelect.value = suggestedGift;
-            this.showGiftSuggestion(amountInput, suggestedGift);
-        }
-    }
-
-    // 返礼品提案を表示
-    showGiftSuggestion(amountInput, giftKey) {
-        const rule = this.giftRules[giftKey];
-        if (rule) {
-            console.log(`${rule.name}が選択されました（¥${rule.minAmount}以上）`);
-        }
-    }
+    // 金額に応じた自動選択機能は削除（ユーザーの選択を優先）
+    // autoSelectGift メソッドは削除済み
+    
+    // showGiftSuggestion メソッドは削除済み
 
     // 返礼品ルールを取得
     getGiftRules() {

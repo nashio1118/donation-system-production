@@ -39,7 +39,7 @@ class GoogleSheetsManager {
                     return stored;
                 }
             } catch (_) {}
-            return 'https://script.google.com/macros/s/AKfycbxYr7_58ZSgWUZGLdc71pKKWbeeXcsDWZgTQXwXnNsPIOi1-WwPjpOCkNpKGQ6yVq21xw/exec'; // 新しいGAS URLをここに設定してください
+            return 'https://script.google.com/macros/s/AKfycbw-ADNyR3BsVKclDAQKIEqoZZX5o-9Nf9miVt0qxNpgN74lz56FIteYazOeta_ERU-raQ/exec'; // 新しいGAS URLをここに設定してください
         };
         this.scriptUrl = __resolveScriptUrl();
         this.loadSettings();

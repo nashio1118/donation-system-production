@@ -2654,6 +2654,8 @@ function onOpen() {
       .addSeparator()
       .addItem('返礼品一覧を初期化', 'initializeGiftSummary')
       .addItem('返礼品一覧を集計', 'runGiftSummary')
+      .addSeparator()
+      .addItem('設定用ブック内に寄付金一覧シート作成', 'createDonationSummarySheetInCurrentBook')
       .addToUi();
   } catch (error) {
     console.error('onOpenメニュー設定エラー:', error);
@@ -3010,6 +3012,17 @@ function initializeDonationSummarySheet(sheet) {
   try {
     console.log('寄付金一覧シートの初期化を開始');
     
+    // 2行目以降のデータをクリア
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      console.log(`2行目以降（${lastRow}行）のデータをクリアします`);
+      sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clearContent();
+      sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clearFormat();
+      console.log('データのクリアが完了しました');
+    } else {
+      console.log('クリアするデータ行がありません（ヘッダーのみ）');
+    }
+    
     // ヘッダー行を設定
     const headers = [
       '氏名', '学年', '振込日', '振込金額', '寄付金\n*直接振込を除く', 
@@ -3065,21 +3078,58 @@ function initializeDonationSummary() {
   try {
     console.log('寄付金一覧初期化を開始');
     
-    // 集計用ブックを取得
-    const aggregationBook = getAggregationBook();
-    const donationSheet = aggregationBook.getSheetByName('寄付金一覧');
+    // まず現在のブック（設定用ブック）に寄付金一覧シートがあるかチェック
+    const currentBook = SpreadsheetApp.getActiveSpreadsheet();
+    let donationSheet = currentBook.getSheetByName('寄付金一覧');
+    let isCurrentBook = true;
     
     if (!donationSheet) {
-      console.error('寄付金一覧シートが見つかりません');
-      SpreadsheetApp.getUi().alert('エラー', '寄付金一覧シートが見つかりません。', SpreadsheetApp.getUi().ButtonSet.OK);
-      return;
+      console.log('設定用ブックに寄付金一覧シートが見つかりません。集計用ブックを確認します。');
+      
+      // 集計用ブックを取得
+      const aggregationBook = getAggregationBook();
+      if (aggregationBook && aggregationBook.getId() !== currentBook.getId()) {
+        donationSheet = aggregationBook.getSheetByName('寄付金一覧');
+        isCurrentBook = false;
+        console.log('集計用ブックから寄付金一覧シートを取得:', aggregationBook.getName());
+      }
+    } else {
+      console.log('設定用ブック内の寄付金一覧シートを使用');
     }
+    
+    if (!donationSheet) {
+      console.log('寄付金一覧シートが見つかりません。設定用ブック内に新規作成するか確認します。');
+      
+      // 設定用ブック内に寄付金一覧シートを作成するか確認
+      const response = SpreadsheetApp.getUi().alert(
+        '寄付金一覧シートが見つかりません',
+        '設定用ブック内に「寄付金一覧」シートを新規作成しますか？\n\n「はい」を選択すると新規作成されます。\n「いいえ」を選択すると処理を中止します。',
+        SpreadsheetApp.getUi().ButtonSet.YES_NO
+      );
+      
+      if (response === SpreadsheetApp.getUi().Button.YES) {
+        // 新規作成
+        donationSheet = createDonationSummarySheetInCurrentBook();
+        if (!donationSheet) {
+          console.error('寄付金一覧シートの作成に失敗しました');
+          return;
+        }
+        isCurrentBook = true;
+        console.log('設定用ブック内に寄付金一覧シートを新規作成しました');
+      } else {
+        console.log('ユーザーがシート作成をキャンセルしました');
+        return;
+      }
+    }
+    
+    console.log(`使用するシート: ${donationSheet.getName()} (${isCurrentBook ? '設定用ブック' : '集計用ブック'})`);
     
     // 初期化を実行
     initializeDonationSummarySheet(donationSheet);
     
     // 成功メッセージを表示
-    SpreadsheetApp.getUi().alert('完了', '寄付金一覧シートの初期化が完了しました。', SpreadsheetApp.getUi().ButtonSet.OK);
+    const bookName = isCurrentBook ? '設定用ブック' : '集計用ブック';
+    SpreadsheetApp.getUi().alert('完了', `寄付金一覧シートの初期化が完了しました。\n\n対象: ${bookName}\nシート: ${donationSheet.getName()}`, SpreadsheetApp.getUi().ButtonSet.OK);
     
   } catch (error) {
     console.error('寄付金一覧初期化エラー:', error);
@@ -3470,5 +3520,82 @@ function executeGiftSummary() {
   } catch (error) {
     console.error('共通の返礼品一覧集計処理エラー:', error);
     throw error;
+  }
+}
+
+// 設定用ブック内に寄付金一覧シートを作成（存在しない場合）
+function createDonationSummarySheetInCurrentBook() {
+  try {
+    const currentBook = SpreadsheetApp.getActiveSpreadsheet();
+    let donationSheet = currentBook.getSheetByName('寄付金一覧');
+    
+    if (!donationSheet) {
+      console.log('設定用ブック内に寄付金一覧シートが存在しません。新規作成します。');
+      
+      // 新しいシートを作成
+      donationSheet = currentBook.insertSheet('寄付金一覧');
+      console.log('寄付金一覧シートを新規作成しました');
+      
+      // シートを初期化
+      initializeDonationSummarySheet(donationSheet);
+      
+      // 成功メッセージを表示
+      SpreadsheetApp.getUi().alert('完了', '設定用ブック内に寄付金一覧シートを新規作成し、初期化しました。', SpreadsheetApp.getUi().ButtonSet.OK);
+      
+      return donationSheet;
+    } else {
+      console.log('寄付金一覧シートは既に存在します');
+      return donationSheet;
+    }
+    
+  } catch (error) {
+    console.error('寄付金一覧シート作成エラー:', error);
+    SpreadsheetApp.getUi().alert('エラー', `シート作成中にエラーが発生しました: ${error.message}`, SpreadsheetApp.getUi().ButtonSet.OK);
+    return null;
+  }
+}
+
+// 寄付金一覧シートの初期化を実行
+function initializeDonationSummary() {
+  try {
+    console.log('寄付金一覧初期化を開始');
+    
+    // まず現在のブック（設定用ブック）に寄付金一覧シートがあるかチェック
+    const currentBook = SpreadsheetApp.getActiveSpreadsheet();
+    let donationSheet = currentBook.getSheetByName('寄付金一覧');
+    let isCurrentBook = true;
+    
+    if (!donationSheet) {
+      console.log('設定用ブックに寄付金一覧シートが見つかりません。集計用ブックを確認します。');
+      
+      // 集計用ブックを取得
+      const aggregationBook = getAggregationBook();
+      if (aggregationBook && aggregationBook.getId() !== currentBook.getId()) {
+        donationSheet = aggregationBook.getSheetByName('寄付金一覧');
+        isCurrentBook = false;
+        console.log('集計用ブックから寄付金一覧シートを取得:', aggregationBook.getName());
+      }
+    } else {
+      console.log('設定用ブック内の寄付金一覧シートを使用');
+    }
+    
+    if (!donationSheet) {
+      console.error('寄付金一覧シートが見つかりません');
+      SpreadsheetApp.getUi().alert('エラー', '寄付金一覧シートが見つかりません。\n\n設定用ブックまたは集計用ブックに「寄付金一覧」シートが必要です。', SpreadsheetApp.getUi().ButtonSet.OK);
+      return;
+    }
+    
+    console.log(`使用するシート: ${donationSheet.getName()} (${isCurrentBook ? '設定用ブック' : '集計用ブック'})`);
+    
+    // 初期化を実行
+    initializeDonationSummarySheet(donationSheet);
+    
+    // 成功メッセージを表示
+    const bookName = isCurrentBook ? '設定用ブック' : '集計用ブック';
+    SpreadsheetApp.getUi().alert('完了', `寄付金一覧シートの初期化が完了しました。\n\n対象: ${bookName}\nシート: ${donationSheet.getName()}`, SpreadsheetApp.getUi().ButtonSet.OK);
+    
+  } catch (error) {
+    console.error('寄付金一覧初期化エラー:', error);
+    SpreadsheetApp.getUi().alert('エラー', `初期化中にエラーが発生しました: ${error.message}`, SpreadsheetApp.getUi().ButtonSet.OK);
   }
 }

@@ -254,11 +254,15 @@ class DonationForm {
     handleAmountTypeChange(amountTypeSelect, amountInput, giftSelect, sheetsContainer, sheetsSelect) {
         const selectedValue = amountTypeSelect.value;
         
+        // 現在の返礼品選択とクリアファイル枚数を保存
+        const currentGift = giftSelect.value;
+        const currentSheets = sheetsSelect.value;
+        const isCurrentlyClearfile = currentGift === 'clearfile';
+        
         if (selectedValue === 'other') {
             amountInput.classList.remove('hidden');
             // 返礼品の選択肢はリセットしない（全返礼品を維持）
             this.updateGiftOptions(giftSelect, 0); // 金額0でも全返礼品を表示
-            sheetsContainer.classList.add('hidden');
         } else {
             amountInput.classList.add('hidden');
             
@@ -267,7 +271,13 @@ class DonationForm {
             
             // 返礼品オプションを更新
             this.updateGiftOptions(giftSelect, amount);
-            sheetsContainer.classList.add('hidden'); // 金額が決まったらクリアファイルコンテナを非表示
+        }
+        
+        // 以前にクリアファイルが選択されていた場合は選択と枚数を復元
+        if (isCurrentlyClearfile) {
+            giftSelect.value = currentGift;
+            sheetsSelect.value = currentSheets;
+            sheetsContainer.classList.remove('hidden');
         }
         
         this.updateTotals();
@@ -277,9 +287,21 @@ class DonationForm {
     handleAmountInputChange(amountCustomInput, giftSelect, sheetsContainer, sheetsSelect) {
         const customAmount = parseInt(amountCustomInput.value) || 0;
         
+        // 現在の返礼品選択とクリアファイル枚数を保存
+        const currentGift = giftSelect.value;
+        const currentSheets = sheetsSelect.value;
+        const isCurrentlyClearfile = currentGift === 'clearfile';
+        
         // 返礼品オプションを更新
         this.updateGiftOptions(giftSelect, customAmount);
-        sheetsContainer.classList.add('hidden'); // 金額が決まったらクリアファイルコンテナを非表示
+        
+        // 以前にクリアファイルが選択されていた場合は選択と枚数を復元
+        if (isCurrentlyClearfile) {
+            giftSelect.value = currentGift;
+            sheetsSelect.value = currentSheets;
+            sheetsContainer.classList.remove('hidden');
+        }
+        
         this.updateTotals();
     }
 
