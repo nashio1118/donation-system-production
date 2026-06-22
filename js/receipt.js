@@ -168,7 +168,10 @@ class ReceiptManager {
         
         const tshirtAmount = breakdown.tshirtAmount || 0;
         const otherFee = breakdown.otherFee || 0;
-        const encouragementAmount = breakdown.hasEncouragementFee ? 1000 : 0;
+        // 送信時に確定した金額を優先（旧データ互換でフォールバック）
+        const encouragementAmount = (typeof breakdown.encouragementAmount === 'number')
+            ? breakdown.encouragementAmount
+            : (breakdown.hasEncouragementFee ? 1000 : 0);
         
         // 合計を計算（直接振込金額は含めない）
         const breakdownTotal = donationAmount + burdenAmount + tshirtAmount + otherFee + encouragementAmount;

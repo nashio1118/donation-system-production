@@ -115,6 +115,18 @@ class BasicInfoForm {
         this.burdenFeePerPerson = burdenFeeAmount;
     }
 
+    // 激励会協力金の金額を設定から取得（無ければデフォルト1000）
+    getEncouragementFeeAmount() {
+        try {
+            const s = window.googleSheetsManager && window.googleSheetsManager.settings;
+            const fee = s && s.burdenSettings && s.burdenSettings.encouragement_fee;
+            if (fee && typeof fee.amount === 'number' && !isNaN(fee.amount)) {
+                return fee.amount;
+            }
+        } catch (_) {}
+        return 1000;
+    }
+
     // 激励会協力金の表示/非表示を切り替え（設定にencouragement_feeが無ければ非表示）
     toggleEncouragementVisibility() {
         try {
@@ -367,7 +379,7 @@ class BasicInfoForm {
         const hasEncouragementFee = document.querySelector('input[name="hasEncouragementFee"]').checked;
 
         // 各項目の金額を計算（直接振込金額は含めない）
-        const encouragementAmount = hasEncouragementFee ? 1000 : 0; // 激励会協力金（設定で金額管理）
+        const encouragementAmount = hasEncouragementFee ? this.getEncouragementFeeAmount() : 0; // 激励会協力金（設定で金額管理）
 
         const total = donationAmount + burdenFeeAmount + tshirtAmount + encouragementAmount + otherFee;
 
@@ -482,7 +494,7 @@ class BasicInfoForm {
         const otherFee = parseInt(document.getElementById('otherFee').value) || 0;
         const hasEncouragementFee = document.querySelector('input[name="hasEncouragementFee"]').checked;
 
-        const encouragementAmount = hasEncouragementFee ? 1000 : 0;
+        const encouragementAmount = hasEncouragementFee ? this.getEncouragementFeeAmount() : 0;
 
         const breakdownTotal = donationAmount + burdenFeeAmount + tshirtAmount + encouragementAmount + otherFee;
 
@@ -596,7 +608,7 @@ class BasicInfoForm {
         console.log('basicInfo.siblingCount type:', typeof data.basicInfo.siblingCount);
 
         // 内訳の詳細計算（表示用）
-        const encouragementAmount = hasEncouragementFee ? 1000 : 0;
+        const encouragementAmount = hasEncouragementFee ? this.getEncouragementFeeAmount() : 0;
 
         data.breakdownDetails.burdenFeeAmount = burdenFeeAmount;
         data.breakdownDetails.encouragementAmount = encouragementAmount;

@@ -181,8 +181,9 @@ class GoogleSheetsManager {
         }
 
         if (encouragementFee) {
-            // 激励会協力金の表示を更新
-            const encouragementText = `激励会協力金（${encouragementFee.amount.toLocaleString()}円）`;
+            // 激励会協力金の表示を更新（設定の名前(B列)＋金額(C列)を反映）
+            const encouragementName = encouragementFee.name || '激励会協力金';
+            const encouragementText = `${encouragementName}（${encouragementFee.amount.toLocaleString()}円）`;
             const encouragementLabelById = document.getElementById('encouragementFeeLabel');
             if (encouragementLabelById) encouragementLabelById.textContent = encouragementText;
             const encouragementLabelByFor = document.querySelector('label[for="encouragementFee"]');
