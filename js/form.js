@@ -1004,6 +1004,10 @@ class DonationForm {
     showSuccess(result = null) {
         // 送信控え用のデータをlocalStorageに保存
         const submissionData = this.collectFormData();
+        // 控え画面では設定の再取得を待たずに、確認画面と同じ返礼品名を表示する
+        submissionData.donors.forEach(donor => {
+            if (donor.gift) donor.giftDisplayName = this.getGiftDisplayName(donor.gift, donor.sheets);
+        });
         localStorage.setItem('submissionData', JSON.stringify(submissionData));
         
         // 2ページ目のデータをクリア（送信完了のため）
@@ -1186,6 +1190,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const initForm = () => {
             if (window.googleSheetsManager) {
                 const form = new DonationForm();
+                // 裏で最新の返礼品設定が届いたら、表示中の選択肢を作り直す
+                window.addEventListener('giftSettingsUpdated', () => form.updateExistingDonorRows());
                 // フォーム設定を取得してタイトルとページタイトルを更新
                 window.googleSheetsManager.getFormSettings().then((settings) => {
                     try {

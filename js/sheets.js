@@ -48,14 +48,15 @@ class GoogleSheetsManager {
 
 
     // ローカルキャッシュから読み込み（存在すれば即時反映）
-    loadSettingsFromCache() {
+    // allowStale=true のときは期限切れでも使う（通信失敗時に固定値より優先するため）
+    loadSettingsFromCache(allowStale = false) {
         try {
             const raw = localStorage.getItem('settings_cache');
             if (!raw) return false;
             const cached = JSON.parse(raw);
             if (!cached || !cached.timestamp || !cached.data) return false;
             const fresh = (Date.now() - cached.timestamp) < this.cacheTtlMs;
-            if (fresh) {
+            if (fresh || allowStale) {
                 this.settings = cached.data;
                 try { this.updateFormSettings(); } catch (_) {}
                 return true;
@@ -124,6 +125,10 @@ class GoogleSheetsManager {
             
         } catch (error) {
             console.error('設定の読み込みエラー:', error);
+            if (this.loadSettingsFromCache(true)) {
+                console.warn('前回取得した設定を使用します');
+                return;
+            }
             console.warn('デフォルト設定を使用します');
             this.loadDefaultSettings();
         }
@@ -163,6 +168,9 @@ class GoogleSheetsManager {
         
         // 返礼品オプションを更新
         this.updateGiftOptions();
+
+        // 表示中のプルダウン等を作り直せるよう各ページへ通知
+        window.dispatchEvent(new CustomEvent('giftSettingsUpdated'));
     }
 
     // 負担金設定を更新

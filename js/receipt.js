@@ -36,6 +36,14 @@ class ReceiptManager {
         // 送信控えを表示
         this.displayReceipt();
         
+        // 返礼品名が保存されていない旧データは、設定の取得完了後に寄付者一覧を描き直す
+        const needsGiftNames = (this.submissionData.donors || []).some(d => d.gift && !d.giftDisplayName);
+        if (needsGiftNames && window.googleSheetsManager) {
+            window.googleSheetsManager.loadSettings()
+                .then(() => this.displayDonors())
+                .catch((e) => console.error('返礼品設定取得エラー:', e));
+        }
+        
         // データをクリア（セキュリティのため）
         this.clearStorageData();
     }
@@ -211,9 +219,7 @@ class ReceiptManager {
             // 返礼品の表示（ID→名前の変換）
             let giftDisplay = 'なし';
             if (donor.gift) {
-                // 返礼品IDから名前への変換
-                const giftName = this.getGiftDisplayName(donor.gift, donor.sheets);
-                giftDisplay = giftName;
+                giftDisplay = donor.giftDisplayName || this.getGiftDisplayName(donor.gift, donor.sheets);
             }
             
             // 直接振込の表示

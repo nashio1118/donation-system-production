@@ -1440,10 +1440,37 @@ function getGiftSettings(sheet) {
   return settings;
 }
 
+// 返礼品設定でID「clearfile」の行の返礼品名一覧を取得（無効化された行も含む）
+// ID「clearfile」の行が無い場合は null
+function getClearfileGiftNames(giftSettingsSheet) {
+  if (!giftSettingsSheet) return null;
+  const data = giftSettingsSheet.getDataRange().getValues();
+  const names = [];
+  for (let i = 1; i < data.length; i++) {
+    const id = data[i][0] ? data[i][0].toString().trim() : '';
+    const name = data[i][1] ? data[i][1].toString().trim() : '';
+    if (id === 'clearfile' && name) names.push(name);
+  }
+  return names.length > 0 ? names : null;
+}
+
+// 返礼品名がクリアファイルかどうかを判定
+// 2ページ目データ整理には設定に無いIDがそのまま保存されることがあるため「clearfile」も対象
+function isClearfileGift(giftName, clearfileNames) {
+  const name = giftName ? giftName.toString().trim() : '';
+  if (!name) return false;
+  if (name === 'clearfile') return true;
+  if (clearfileNames) return clearfileNames.indexOf(name) !== -1;
+  return name.indexOf('クリアファイル') !== -1;
+}
+
 // 新しい集計ロジックで返礼品一覧シートを更新
 function updateGiftSummaryWithNewLogic(sheet, page1DataSheet, page2DataSheet, giftSettingsSheet) {
   try {
     console.log('新しい集計ロジックで返礼品一覧を更新開始');
+    
+    const clearfileNames = getClearfileGiftNames(giftSettingsSheet);
+    console.log('クリアファイルとして扱う返礼品名:', clearfileNames || '（ID clearfile 未設定のため名前で判定）');
     
     // 1ページ目データから氏名と学年を取得
     const page1Data = page1DataSheet.getDataRange().getValues();
@@ -1494,7 +1521,7 @@ function updateGiftSummaryWithNewLogic(sheet, page1DataSheet, page2DataSheet, gi
           giftSummary[trimmedName].gifts[giftName] = (giftSummary[trimmedName].gifts[giftName] || 0) + 1;
           
           // クリアファイルの返礼品がある場合のみ、その枚数を加算
-          if (giftName === '③ クリアファイル') {
+          if (isClearfileGift(giftName, clearfileNames)) {
             giftSummary[trimmedName].clearfileTotal += sheets;
           }
         }
@@ -1513,15 +1540,15 @@ function updateGiftSummaryWithNewLogic(sheet, page1DataSheet, page2DataSheet, gi
     const configRow = giftSheetData[1]; // 2行目（インデックス1）
     console.log('返礼品一覧シート2行目の設定値:', configRow);
     
-            // 設定列の返礼品名を取得
-        const configGifts = {
-          D2: configRow[3], // D列（インデックス3）
-          F2: configRow[5], // F列（インデックス5）
-          H2: configRow[7], // H列（インデックス7）
-          I2: configRow[8], // I列（インデックス8）
-          J2: configRow[9], // J列（インデックス9）
-          L2: configRow[11] // L列（インデックス11）
-        };
+    // 設定列の返礼品名を取得（syncGiftSettingsToSheet が書き込む D,F,H,J,L 列と一致させる）
+    const configCell = (index) => configRow[index] ? configRow[index].toString().trim() : '';
+    const configGifts = {
+      D2: configCell(3),  // D列 → 数はE列
+      F2: configCell(5),  // F列 → 数はG列
+      H2: configCell(7),  // H列 → 数はI列
+      J2: configCell(9),  // J列 → 数はK列
+      L2: configCell(11)  // L列 → M列はファイル数
+    };
     
     console.log('設定列の返礼品名:', configGifts);
     
@@ -1591,15 +1618,25 @@ function updateGiftSummaryWithNewLogic(sheet, page1DataSheet, page2DataSheet, gi
           D2: configGifts.D2 ? (summary.gifts[configGifts.D2] || 0) : 0,
           F2: configGifts.F2 ? (summary.gifts[configGifts.F2] || 0) : 0,
           H2: configGifts.H2 ? (summary.gifts[configGifts.H2] || 0) : 0,
-          I2: configGifts.I2 ? (summary.gifts[configGifts.I2] || 0) : 0,
           J2: configGifts.J2 ? (summary.gifts[configGifts.J2] || 0) : 0,
           L2: configGifts.L2 ? (summary.gifts[configGifts.L2] || 0) : 0
         };
         
         // ファイル数の計算
-        // M列 = クリアファイル枚数の合計 + 返礼品の数の合計 - L2の返礼品数
+        // 【方針】返礼品1つにつきクリアファイルを自動で1枚計上する。
+        //   ただしクリアファイル自体を返礼品として選んだ場合は、手入力された枚数のみを使い、自動の1枚は付けない。
         const totalGiftCount = Object.values(giftCounts).reduce((sum, count) => sum + count, 0);
-        const fileCount = summary.clearfileTotal + totalGiftCount - (giftCounts['L'] || 0);
+
+        // 設定列のうちクリアファイルに該当する列の件数は、自動加算(1枚)の対象から除外する
+        let clearfileGiftCountInTotal = 0;
+        Object.keys(configGifts).forEach(key => {
+          if (isClearfileGift(configGifts[key], clearfileNames)) {
+            clearfileGiftCountInTotal += giftCounts[key];
+          }
+        });
+
+        // M列 = クリアファイル枚数の合計（手入力分） + クリアファイル以外の返礼品の数（自動1枚分）
+        const fileCount = summary.clearfileTotal + totalGiftCount - clearfileGiftCountInTotal;
         
         // お礼状の計算
         // O列 = 寄付者数 + 1
@@ -1609,7 +1646,7 @@ function updateGiftSummaryWithNewLogic(sheet, page1DataSheet, page2DataSheet, gi
         sheet.getRange(currentRow, 5).setValue(giftCounts.D2);  // E列：D2の返礼品数
         sheet.getRange(currentRow, 7).setValue(giftCounts.F2);  // G列：F2の返礼品数
         sheet.getRange(currentRow, 9).setValue(giftCounts.H2);  // I列：H2の返礼品数
-        sheet.getRange(currentRow, 11).setValue(giftCounts.I2); // K列：I2の返礼品数
+        sheet.getRange(currentRow, 11).setValue(giftCounts.J2); // K列：J2の返礼品数
         sheet.getRange(currentRow, 13).setValue(fileCount);     // M列：ファイル数
         sheet.getRange(currentRow, 15).setValue(thankYouCount); // O列：お礼状数
         
@@ -1631,10 +1668,6 @@ function updateGiftSummaryWithNewLogic(sheet, page1DataSheet, page2DataSheet, gi
           if (giftCounts.H2) {
             if (!gradeSummary[grade].gifts.H2) gradeSummary[grade].gifts.H2 = 0;
             gradeSummary[grade].gifts.H2 += giftCounts.H2;
-          }
-          if (giftCounts.I2) {
-            if (!gradeSummary[grade].gifts.I2) gradeSummary[grade].gifts.I2 = 0;
-            gradeSummary[grade].gifts.I2 += giftCounts.I2;
           }
           if (giftCounts.J2) {
             if (!gradeSummary[grade].gifts.J2) gradeSummary[grade].gifts.J2 = 0;
@@ -1687,7 +1720,7 @@ function updateGiftSummaryWithNewLogic(sheet, page1DataSheet, page2DataSheet, gi
           sheet.getRange(currentRow, 5).setValue(gradeSummary[grade].gifts.D2 || 0);  // E列：D2の返礼品数小計
           sheet.getRange(currentRow, 7).setValue(gradeSummary[grade].gifts.F2 || 0);  // G列：F2の返礼品数小計
           sheet.getRange(currentRow, 9).setValue(gradeSummary[grade].gifts.H2 || 0);  // I列：H2の返礼品数小計
-          sheet.getRange(currentRow, 11).setValue(gradeSummary[grade].gifts.I2 || 0); // K列：I2の返礼品数小計
+          sheet.getRange(currentRow, 11).setValue(gradeSummary[grade].gifts.J2 || 0); // K列：J2の返礼品数小計
           
           // D,F,H,J,L,N,P列に返礼品名を設定（4行目の値と同じ）
           sheet.getRange(currentRow, 4).setValue(sheet.getRange(4, 4).getValue() || '');  // D列：D4の値（タオル）
@@ -1777,7 +1810,7 @@ function updateGiftSummaryWithNewLogic(sheet, page1DataSheet, page2DataSheet, gi
           sheet.getRange(currentRow, 5).setValue(grandTotal.gifts.D2 || 0);  // E列：D2の返礼品数全体合計
           sheet.getRange(currentRow, 7).setValue(grandTotal.gifts.F2 || 0);  // G列：F2の返礼品数全体合計
           sheet.getRange(currentRow, 9).setValue(grandTotal.gifts.H2 || 0);  // I列：H2の返礼品数全体合計
-          sheet.getRange(currentRow, 11).setValue(grandTotal.gifts.I2 || 0); // K列：I2の返礼品数全体合計
+          sheet.getRange(currentRow, 11).setValue(grandTotal.gifts.J2 || 0); // K列：J2の返礼品数全体合計
           
           // D,F,H,J,L,N,P列に返礼品名を設定（4行目の値と同じ）
           sheet.getRange(currentRow, 4).setValue(sheet.getRange(4, 4).getValue() || '');  // D列：D4の値（タオル）
@@ -1887,26 +1920,6 @@ function clearGiftSummaryRows(sheet) {
   }
 }
 
-// 返礼品一覧シートのヘッダーを更新
-function updateGiftSheetHeaders(sheet, giftSettings) {
-  // 既存のヘッダーをクリア
-  sheet.clear();
-  
-  // 新しいヘッダーを作成
-  const headers = ['No.', '学年', '生徒氏名'];
-  
-  // 返礼品の列を追加
-  giftSettings.forEach(gift => {
-    headers.push(gift.name);
-  });
-  
-  // クリアファイル列を追加
-  headers.push('クリアファイル');
-  
-  // ヘッダーを設定
-  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-}
-
 // 設定用ブックの返礼品設定を返礼品一覧シートの2行目に反映
 function syncGiftSettingsToSheet(sheet) {
   try {
@@ -1968,82 +1981,6 @@ function syncGiftSettingsToSheet(sheet) {
     throw error;
   }
 }
-
-// 返礼品一覧シートのデータを更新
-function updateGiftSheetData(sheet, page1DataSheet, page2DataSheet, giftSettings) {
-  // 1ページ目データから氏名と学年を取得
-  const page1Data = page1DataSheet.getDataRange().getValues();
-  const nameGradeMap = {};
-  
-  // ヘッダー行をスキップして2行目から処理
-  for (let i = 1; i < page1Data.length; i++) {
-    const row = page1Data[i];
-    const name = row[1]; // B列：氏名
-    const grade = row[2]; // C列：学年
-    
-    if (name) {
-      nameGradeMap[name] = grade;
-    }
-  }
-  
-  // 2ページ目データから返礼品を集計
-  const page2Data = page2DataSheet.getDataRange().getValues();
-  const giftSummary = {};
-  
-  // ヘッダー行をスキップして2行目から処理
-  for (let i = 1; i < page2Data.length; i++) {
-    const row = page2Data[i];
-    const page1Name = row[1]; // B列：1ページ目氏名
-    const gift = row[4]; // E列：返礼品（名前）
-    const sheets = parseInt(row[5]) || 0; // F列：クリアファイル枚数
-    
-    if (page1Name && nameGradeMap[page1Name]) {
-      if (!giftSummary[page1Name]) {
-        giftSummary[page1Name] = {
-          grade: nameGradeMap[page1Name],
-          gifts: {},
-          clearfileTotal: 0
-        };
-      }
-      
-      // 返礼品のカウント（名前で集計）
-      if (gift && gift !== 'クリアファイル') {
-        giftSummary[page1Name].gifts[gift] = (giftSummary[page1Name].gifts[gift] || 0) + 1;
-        // クリアファイルは1枚つく
-        giftSummary[page1Name].clearfileTotal += 1;
-      } else if (gift === 'クリアファイル') {
-        // クリアファイルを選択した場合は選択した枚数
-        giftSummary[page1Name].clearfileTotal += sheets;
-      }
-    }
-  }
-  
-  // シートにデータを書き込み
-  const newData = [];
-  let rowNumber = 1;
-  
-  Object.keys(giftSummary).forEach(name => {
-    const summary = giftSummary[name];
-    const row = [rowNumber, summary.grade, name];
-    
-    // 各返礼品の数を追加（名前でマッチング）
-    giftSettings.forEach(gift => {
-      row.push(summary.gifts[gift.name] || 0);
-    });
-    
-    // クリアファイルの合計を追加
-    row.push(summary.clearfileTotal);
-    
-    newData.push(row);
-    rowNumber++;
-  });
-  
-  // データを書き込み（ヘッダー行の下から）
-  if (newData.length > 0) {
-    sheet.getRange(2, 1, newData.length, newData[0].length).setValues(newData);
-  }
-}
-
 
 
 // OPTIONSリクエストに対応（CORSプリフライトリクエスト用）
